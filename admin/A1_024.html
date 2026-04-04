@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>テーブル管理 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── View toggle ── */
+    .view-toggle { display:flex; border:1px solid var(--color-gray-200); border-radius:var(--radius-md); overflow:hidden; }
+    .view-btn { padding:7px 12px; border:none; background:var(--color-white); cursor:pointer; color:var(--color-gray-500); display:flex; align-items:center; gap:5px; font-size:0.8rem; font-weight:600; transition:background var(--transition); }
+    .view-btn + .view-btn { border-left:1px solid var(--color-gray-200); }
+    .view-btn.active { background:var(--color-primary); color:#fff; }
+
+    /* ── Stats row ── */
+    .stats-row { display:flex; gap:0; border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; }
+    .stat-item { flex:1; padding:12px 16px; text-align:center; border-right:1px solid var(--color-gray-200); }
+    .stat-item:last-child { border-right:none; }
+    .stat-val { font-size:1.3rem; font-weight:800; color:var(--color-gray-900); line-height:1; }
+    .stat-lbl { font-size:0.7rem; color:var(--color-gray-500); margin-top:3px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-bar .search-wrap { position:relative; flex:1; min-width:180px; }
+    .filter-bar .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--color-gray-400); }
+    .filter-bar .search-wrap input { padding-left:34px; }
+
+    /* ── Table list ── */
+    .tbl-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .tbl-table th { padding:10px 12px; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-gray-500); border-bottom:2px solid var(--color-gray-200); background:var(--color-gray-50); white-space:nowrap; }
+    .tbl-table td { padding:12px; border-bottom:1px solid var(--color-gray-100); vertical-align:middle; color:var(--color-gray-700); }
+    .tbl-table tbody tr:hover { background:var(--color-gray-50); }
+    .tbl-table tbody tr:last-child td { border-bottom:none; }
+
+    /* ── Table name cell ── */
+    .tbl-name { font-weight:700; color:var(--color-gray-900); }
+    .tbl-sub  { font-size:0.7rem; color:var(--color-gray-400); margin-top:2px; }
+
+    /* ── QR mini ── */
+    .qr-mini { width:44px; height:44px; background:var(--color-gray-100); border:1px solid var(--color-gray-200); border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:border-color var(--transition); }
+    .qr-mini:hover { border-color:var(--color-primary); }
+    .qr-mini svg { color:var(--color-gray-500); }
+
+    /* ── Floor map view ── */
+    .floor-wrap { display:none; }
+    .floor-wrap.active { display:block; }
+    .list-wrap { display:block; }
+    .list-wrap.hidden { display:none; }
+
+    .floor-area { margin-bottom:24px; }
+    .floor-area-title { font-size:0.82rem; font-weight:700; color:var(--color-gray-700); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+    .floor-area-title::after { content:''; flex:1; height:1px; background:var(--color-gray-200); }
+    .floor-grid { display:flex; flex-wrap:wrap; gap:12px; }
+    .floor-card { width:110px; border:1.5px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:12px 10px; text-align:center; cursor:pointer; transition:border-color var(--transition), box-shadow var(--transition); background:var(--color-white); position:relative; }
+    .floor-card:hover { border-color:var(--color-primary); box-shadow:var(--shadow-md); }
+    .floor-card.occupied { border-color:var(--color-danger); background:#fff5f5; }
+    .floor-card.reserved { border-color:var(--color-warning); background:#fffbeb; }
+    .floor-card.available { border-color:var(--color-success); background:#f0fdf4; }
+    .floor-card .fc-name { font-size:0.8rem; font-weight:700; color:var(--color-gray-800); margin-bottom:4px; }
+    .floor-card .fc-cap  { font-size:0.7rem; color:var(--color-gray-500); }
+    .floor-card .fc-status { font-size:0.65rem; font-weight:700; margin-top:6px; padding:2px 6px; border-radius:var(--radius-full); display:inline-block; }
+    .floor-card.available .fc-status { background:var(--color-success-light); color:#065f46; }
+    .floor-card.occupied .fc-status  { background:var(--color-danger-light);  color:#991b1b; }
+    .floor-card.reserved .fc-status  { background:var(--color-warning-light); color:#92400e; }
+    .floor-card .qr-badge { position:absolute; top:6px; right:6px; width:18px; height:18px; background:var(--color-primary-light); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; }
+
+    /* ── Slide panel ── */
+    .panel-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:150; }
+    .panel-overlay.active { display:block; }
+    .slide-panel { position:fixed; top:0; right:-440px; width:420px; height:100vh; background:#fff; z-index:160; box-shadow:-8px 0 40px rgba(0,0,0,.12); transition:right .3s ease; display:flex; flex-direction:column; }
+    .slide-panel.open { right:0; }
+    .panel-header { padding:18px 20px; border-bottom:1px solid var(--color-gray-200); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .panel-header h2 { font-size:0.95rem; font-weight:700; color:var(--color-gray-900); }
+    .panel-close { width:32px; height:32px; border-radius:var(--radius-md); border:none; background:var(--color-gray-100); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-gray-600); font-size:18px; transition:background var(--transition); }
+    .panel-close:hover { background:var(--color-gray-200); }
+    .panel-body { flex:1; overflow-y:auto; padding:20px; }
+    .panel-footer { padding:14px 20px; border-top:1px solid var(--color-gray-200); display:flex; gap:10px; flex-shrink:0; }
+
+    /* ── QR modal ── */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.active { display:flex; }
+    .modal-box { background:#fff; border-radius:var(--radius-xl); padding:28px 32px; max-width:320px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+    .modal-box h3 { font-size:1rem; font-weight:700; margin-bottom:4px; }
+    .modal-box p  { font-size:0.82rem; color:var(--color-gray-500); margin-bottom:16px; }
+    .qr-placeholder { width:160px; height:160px; margin:0 auto 16px; background:var(--color-gray-100); border-radius:var(--radius-lg); display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px solid var(--color-gray-200); }
+    .qr-placeholder svg { color:var(--color-gray-400); }
+
+    /* ── Page header row ── */
+    .page-header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+
+    /* ── Confirm overlay ── */
+    .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:220; align-items:center; justify-content:center; }
+    .confirm-overlay.active { display:flex; }
+    .confirm-box { background:#fff; border-radius:var(--radius-xl); padding:28px 32px; max-width:380px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .confirm-box h3 { font-size:1rem; font-weight:700; margin-bottom:8px; }
+    .confirm-box p  { font-size:0.83rem; color:var(--color-gray-500); margin-bottom:20px; }
+    .confirm-box .actions { display:flex; gap:10px; justify-content:center; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <div class="page-content">
+
+      <!-- Page header -->
+      <div class="page-header-row">
+        <div>
+          <nav class="breadcrumb">
+            <a href="index.html">ホーム</a>
+            <span class="breadcrumb-sep">›</span>
+            <span>マスタ管理</span>
+            <span class="breadcrumb-sep">›</span>
+            <span>テーブル管理</span>
+          </nav>
+          <h1 class="page-title" style="margin-top:8px">🪑 テーブル管理</h1>
+          <p class="page-subtitle">テーブルの登録・エリア設定・QRコード発行を管理します。</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;margin-top:6px">
+          <div class="view-toggle">
+            <button class="view-btn active" id="btn-list-view" onclick="switchView('list')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              リスト
+            </button>
+            <button class="view-btn" id="btn-floor-view" onclick="switchView('floor')">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              フロアマップ
+            </button>
+          </div>
+          <button class="btn btn-danger" onclick="openPanel()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            テーブル新規追加
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-val">24</div>
+          <div class="stat-lbl">総テーブル数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-primary)">3</div>
+          <div class="stat-lbl">エリア数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-success)">20</div>
+          <div class="stat-lbl">予約対応</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-warning)">24</div>
+          <div class="stat-lbl">QR発行済み</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">96</div>
+          <div class="stat-lbl">最大収容人数</div>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" class="form-control" placeholder="テーブル名・エリアで検索" oninput="filterList(this.value)">
+        </div>
+        <select class="form-control" style="min-width:120px" onchange="filterList()">
+          <option value="">全エリア</option>
+          <option>ホールA</option>
+          <option>ホールB</option>
+          <option>個室</option>
+        </select>
+        <select class="form-control" style="min-width:120px" onchange="filterList()">
+          <option value="">喫煙区分</option>
+          <option>禁煙</option>
+          <option>喫煙</option>
+        </select>
+        <select class="form-control" style="min-width:120px" onchange="filterList()">
+          <option value="">予約表示</option>
+          <option>予約対応あり</option>
+          <option>予約対応なし</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="showToast('QRコードを一括発行しました（24件）')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg>
+          QR一括発行
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="showToast('CSVをエクスポートしました')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV出力
+        </button>
+      </div>
+
+      <!-- ════════════ LIST VIEW ════════════ -->
+      <div class="list-wrap" id="list-view">
+        <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+          <table class="tbl-table" id="tbl-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" onchange="selectAllRows(this)"></th>
+                <th>テーブル名</th>
+                <th style="width:100px">エリア</th>
+                <th style="width:80px">収容人数</th>
+                <th style="width:80px">タイプ</th>
+                <th style="width:80px">予約表示</th>
+                <th style="width:80px">QRコード</th>
+                <th style="width:60px">状態</th>
+                <th style="width:90px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="tbl-tbody">
+
+              <!-- ホールA -->
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">テーブルA-01</div>
+                  <div class="tbl-sub">入口近く</div>
+                </td>
+                <td><span class="badge" style="background:#ede9fe;color:#5b21b6">ホールA</span></td>
+                <td style="text-align:center;font-weight:700">4名</td>
+                <td><span class="badge" style="background:#fef3c7;color:#92400e">喫煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('テーブルA-01','A-01')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge badge-green" style="font-size:0.65rem">空席</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('A-01')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('テーブルA-01')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">テーブルA-02</div>
+                  <div class="tbl-sub">窓際</div>
+                </td>
+                <td><span class="badge" style="background:#ede9fe;color:#5b21b6">ホールA</span></td>
+                <td style="text-align:center;font-weight:700">4名</td>
+                <td><span class="badge badge-gray">禁煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('テーブルA-02','A-02')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge" style="background:#fee2e2;color:#dc2626;font-size:0.65rem">使用中</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('A-02')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('テーブルA-02')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">テーブルA-03</div>
+                  <div class="tbl-sub">カウンター前</div>
+                </td>
+                <td><span class="badge" style="background:#ede9fe;color:#5b21b6">ホールA</span></td>
+                <td style="text-align:center;font-weight:700">2名</td>
+                <td><span class="badge badge-gray">禁煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('テーブルA-03','A-03')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.65rem">予約済</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('A-03')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('テーブルA-03')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- ホールB -->
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">テーブルB-01</div>
+                  <div class="tbl-sub">—</div>
+                </td>
+                <td><span class="badge" style="background:#dbeafe;color:#1e40af">ホールB</span></td>
+                <td style="text-align:center;font-weight:700">6名</td>
+                <td><span class="badge badge-gray">禁煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('テーブルB-01','B-01')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge badge-green" style="font-size:0.65rem">空席</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('B-01')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('テーブルB-01')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">テーブルB-05</div>
+                  <div class="tbl-sub">奥側</div>
+                </td>
+                <td><span class="badge" style="background:#dbeafe;color:#1e40af">ホールB</span></td>
+                <td style="text-align:center;font-weight:700">4名</td>
+                <td><span class="badge badge-gray">禁煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('テーブルB-05','B-05')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge" style="background:#fee2e2;color:#dc2626;font-size:0.65rem">使用中</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('B-05')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('テーブルB-05')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">テーブルC-12</div>
+                  <div class="tbl-sub">ホールB 奥</div>
+                </td>
+                <td><span class="badge" style="background:#dbeafe;color:#1e40af">ホールB</span></td>
+                <td style="text-align:center;font-weight:700">6名</td>
+                <td><span class="badge badge-gray">禁煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('テーブルC-12','C-12')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge badge-green" style="font-size:0.65rem">空席</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C-12')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('テーブルC-12')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- 個室 -->
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">個室1</div>
+                  <div class="tbl-sub">完全個室</div>
+                </td>
+                <td><span class="badge" style="background:#d1fae5;color:#065f46">個室</span></td>
+                <td style="text-align:center;font-weight:700">2名</td>
+                <td><span class="badge badge-gray">禁煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('個室1','P-01')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.65rem">予約済</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('P-01')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('個室1')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td><input type="checkbox" class="row-check"></td>
+                <td>
+                  <div class="tbl-name">個室2</div>
+                  <div class="tbl-sub">完全個室・大人数向け</div>
+                </td>
+                <td><span class="badge" style="background:#d1fae5;color:#065f46">個室</span></td>
+                <td style="text-align:center;font-weight:700">8名</td>
+                <td><span class="badge badge-gray">禁煙</span></td>
+                <td><span class="badge badge-green">対応</span></td>
+                <td><div class="qr-mini" onclick="openQR('個室2','P-02')"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/></svg></div></td>
+                <td><span class="badge badge-green" style="font-size:0.65rem">空席</span></td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('P-02')">編集</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('個室2')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;flex-wrap:wrap;gap:10px">
+          <span style="font-size:0.8rem;color:var(--color-gray-500)">8件表示 / 全24件</span>
+          <div style="display:flex;gap:4px">
+            <button class="page-btn" disabled>‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">›</button>
+          </div>
+        </div>
+      </div><!-- /list-view -->
+
+
+      <!-- ════════════ FLOOR MAP VIEW ════════════ -->
+      <div class="floor-wrap" id="floor-view">
+
+        <!-- Legend -->
+        <div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--color-gray-600)">
+            <span style="width:12px;height:12px;border-radius:3px;background:#f0fdf4;border:1.5px solid var(--color-success);display:inline-block"></span>空席
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--color-gray-600)">
+            <span style="width:12px;height:12px;border-radius:3px;background:#fff5f5;border:1.5px solid var(--color-danger);display:inline-block"></span>使用中
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;font-size:0.78rem;color:var(--color-gray-600)">
+            <span style="width:12px;height:12px;border-radius:3px;background:#fffbeb;border:1.5px solid var(--color-warning);display:inline-block"></span>予約済
+          </div>
+        </div>
+
+        <!-- ホールA -->
+        <div class="floor-area">
+          <div class="floor-area-title">🟣 ホールA</div>
+          <div class="floor-grid">
+            <div class="floor-card available" onclick="openPanel('A-01')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">A-01</div>
+              <div class="fc-cap">4名 / 喫煙</div>
+              <span class="fc-status">空席</span>
+            </div>
+            <div class="floor-card occupied" onclick="openPanel('A-02')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">A-02</div>
+              <div class="fc-cap">4名 / 禁煙</div>
+              <span class="fc-status">使用中</span>
+            </div>
+            <div class="floor-card reserved" onclick="openPanel('A-03')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">A-03</div>
+              <div class="fc-cap">2名 / 禁煙</div>
+              <span class="fc-status">予約済</span>
+            </div>
+            <div class="floor-card available" onclick="openPanel('A-04')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">A-04</div>
+              <div class="fc-cap">4名 / 禁煙</div>
+              <span class="fc-status">空席</span>
+            </div>
+            <div class="floor-card occupied" onclick="openPanel('A-05')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">A-05</div>
+              <div class="fc-cap">6名 / 禁煙</div>
+              <span class="fc-status">使用中</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ホールB -->
+        <div class="floor-area">
+          <div class="floor-area-title">🔵 ホールB</div>
+          <div class="floor-grid">
+            <div class="floor-card available" onclick="openPanel('B-01')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">B-01</div>
+              <div class="fc-cap">6名 / 禁煙</div>
+              <span class="fc-status">空席</span>
+            </div>
+            <div class="floor-card occupied" onclick="openPanel('B-02')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">B-02</div>
+              <div class="fc-cap">4名 / 禁煙</div>
+              <span class="fc-status">使用中</span>
+            </div>
+            <div class="floor-card available" onclick="openPanel('B-03')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">B-03</div>
+              <div class="fc-cap">4名 / 禁煙</div>
+              <span class="fc-status">空席</span>
+            </div>
+            <div class="floor-card reserved" onclick="openPanel('B-04')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">B-04</div>
+              <div class="fc-cap">6名 / 禁煙</div>
+              <span class="fc-status">予約済</span>
+            </div>
+            <div class="floor-card occupied" onclick="openPanel('B-05')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">B-05</div>
+              <div class="fc-cap">4名 / 禁煙</div>
+              <span class="fc-status">使用中</span>
+            </div>
+            <div class="floor-card available" onclick="openPanel('C-12')">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">C-12</div>
+              <div class="fc-cap">6名 / 禁煙</div>
+              <span class="fc-status">空席</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 個室 -->
+        <div class="floor-area">
+          <div class="floor-area-title">🟢 個室</div>
+          <div class="floor-grid">
+            <div class="floor-card reserved" onclick="openPanel('P-01')" style="width:130px">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">個室1</div>
+              <div class="fc-cap">2名 / 禁煙 / 完全個室</div>
+              <span class="fc-status">予約済</span>
+            </div>
+            <div class="floor-card available" onclick="openPanel('P-02')" style="width:130px">
+              <div class="qr-badge"><svg width="10" height="10" fill="none" stroke="var(--color-primary)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="3" y="15" width="6" height="6" rx="1"/><path d="M15 15h.01"/></svg></div>
+              <div class="fc-name">個室2</div>
+              <div class="fc-cap">8名 / 禁煙 / 大人数</div>
+              <span class="fc-status">空席</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /floor-view -->
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+
+<!-- ══════════ SLIDE PANEL — テーブル登録・編集 ══════════ -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+<div class="slide-panel" id="slide-panel">
+  <div class="panel-header">
+    <h2 id="panel-title">テーブルを追加</h2>
+    <button class="panel-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="panel-body">
+
+    <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">テーブル名 <span class="required">*</span></label>
+        <input type="text" class="form-control" id="p-name" placeholder="例：テーブルA-01" value="テーブルA-01">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">テーブルコード</label>
+        <input type="text" class="form-control" id="p-code" placeholder="例：A-01" value="A-01">
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">エリア <span class="required">*</span></label>
+        <select class="form-control" id="p-area">
+          <option selected>ホールA</option>
+          <option>ホールB</option>
+          <option>個室</option>
+          <option>テラス</option>
+          <option>カウンター</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">収容人数 <span class="required">*</span></label>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="number" class="form-control" id="p-cap" value="4" min="1" max="50">
+          <span style="font-size:0.82rem;color:var(--color-gray-500);white-space:nowrap">名</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">喫煙区分</label>
+        <select class="form-control" id="p-smoking">
+          <option selected>禁煙</option>
+          <option>喫煙</option>
+          <option>喫煙可（分煙）</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">テーブルタイプ</label>
+        <select class="form-control" id="p-type">
+          <option selected>通常テーブル</option>
+          <option>カウンター席</option>
+          <option>ソファ席</option>
+          <option>個室</option>
+          <option>テラス席</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">備考・特記事項</label>
+      <input type="text" class="form-control" id="p-note" placeholder="例：入口近く、窓際、車椅子対応..." value="入口近く">
+    </div>
+
+    <!-- Booking toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--color-gray-50);border-radius:var(--radius-md);margin-bottom:14px">
+      <div>
+        <div style="font-size:0.83rem;font-weight:600;color:var(--color-gray-800)">予約システムへの表示</div>
+        <div style="font-size:0.72rem;color:var(--color-gray-500)">ONにすると予約フォームのテーブル選択に表示されます</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="p-booking" checked>
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+
+    <!-- Tablet/Kiosk toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--color-gray-50);border-radius:var(--radius-md);margin-bottom:20px">
+      <div>
+        <div style="font-size:0.83rem;font-weight:600;color:var(--color-gray-800)">タブレット注文</div>
+        <div style="font-size:0.72rem;color:var(--color-gray-500)">このテーブルからQR/タブレット注文を受け付けます</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="p-tablet" checked>
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+
+    <!-- QR section -->
+    <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-lg);padding:16px;background:var(--color-gray-50)">
+      <div style="font-size:0.83rem;font-weight:700;color:var(--color-gray-800);margin-bottom:10px">QRコード</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:72px;height:72px;background:#fff;border:1px solid var(--color-gray-200);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-gray-400)" stroke-width="1.2">
+            <rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/>
+            <rect x="3" y="15" width="6" height="6" rx="1"/>
+            <rect x="5" y="5" width="2" height="2" fill="var(--color-gray-400)" stroke="none"/>
+            <rect x="17" y="5" width="2" height="2" fill="var(--color-gray-400)" stroke="none"/>
+            <rect x="5" y="17" width="2" height="2" fill="var(--color-gray-400)" stroke="none"/>
+            <path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/>
+          </svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:0.78rem;color:var(--color-gray-600);margin-bottom:8px">テーブルA-01 専用QRコード</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-sm btn-primary" onclick="showToast('QRコードを発行しました')">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              QRを発行
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="showToast('QRコードを印刷します')">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              印刷
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="showToast('QRコードをダウンロードしました')">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              DL
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="panel-footer">
+    <button class="btn btn-secondary" style="flex:1" onclick="closePanel()">キャンセル</button>
+    <button class="btn btn-primary" style="flex:2" onclick="saveTable()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      保存する
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════ QR MODAL ══════════ -->
+<div class="modal-overlay" id="qr-modal" onclick="closeQR()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3 id="qr-title">テーブルA-01 QRコード</h3>
+    <p id="qr-sub">コード：A-01</p>
+    <div class="qr-placeholder">
+      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--color-gray-400)" stroke-width="1.2">
+        <rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/>
+        <rect x="3" y="15" width="6" height="6" rx="1"/>
+        <rect x="5" y="5" width="2" height="2" fill="var(--color-gray-400)" stroke="none"/>
+        <rect x="17" y="5" width="2" height="2" fill="var(--color-gray-400)" stroke="none"/>
+        <rect x="5" y="17" width="2" height="2" fill="var(--color-gray-400)" stroke="none"/>
+        <path d="M15 15h.01M15 18h3v3M21 15v.01M18 15v.01"/>
+      </svg>
+      <div style="font-size:0.7rem;color:var(--color-gray-400);margin-top:6px">QRコードプレビュー</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:14px">
+      <button class="btn btn-sm btn-primary" onclick="showToast('印刷を開始します');closeQR()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        印刷
+      </button>
+      <button class="btn btn-sm btn-secondary" onclick="showToast('ダウンロードしました');closeQR()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        ダウンロード
+      </button>
+    </div>
+    <button class="btn btn-ghost" style="width:100%" onclick="closeQR()">閉じる</button>
+  </div>
+</div>
+
+
+<!-- ══════════ DELETE CONFIRM ══════════ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div style="width:48px;height:48px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <svg width="22" height="22" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+    </div>
+    <h3>テーブルを削除しますか？</h3>
+    <p id="confirm-name" style="font-weight:700;color:var(--color-gray-800);margin-bottom:6px"></p>
+    <p>この操作は取り消せません。QRコードも無効になります。</p>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">キャンセル</button>
+      <button class="btn" style="background:#dc2626;color:#fff" onclick="executeDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">保存しました</span>
+</div>
+
+<!-- Pagination btn style (reuse) -->
+<style>
+  .page-btn { width:32px;height:32px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:600;border:1px solid var(--color-gray-200);background:var(--color-white);cursor:pointer;color:var(--color-gray-600);transition:background var(--transition); }
+  .page-btn:hover { background:var(--color-gray-100); }
+  .page-btn.active { background:var(--color-primary);color:#fff;border-color:var(--color-primary); }
+  .page-btn:disabled { opacity:.4;cursor:default; }
+</style>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'table' });
+
+  /* ── View toggle ── */
+  function switchView(v) {
+    const isList = v === 'list';
+    document.getElementById('list-view').classList.toggle('hidden', !isList);
+    document.getElementById('floor-view').classList.toggle('active', !isList);
+    document.getElementById('btn-list-view').classList.toggle('active', isList);
+    document.getElementById('btn-floor-view').classList.toggle('active', !isList);
+  }
+
+  /* ── Filter list ── */
+  function filterList(q) { /* stub */ }
+
+  /* ── Select all rows ── */
+  function selectAllRows(master) {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = master.checked);
+  }
+
+  /* ── Slide panel ── */
+  function openPanel(id) {
+    const title = id ? 'テーブルを編集：' + id : 'テーブルを追加';
+    document.getElementById('panel-title').textContent = title;
+    document.getElementById('panel-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePanel() {
+    document.getElementById('panel-overlay').classList.remove('active');
+    document.getElementById('slide-panel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function saveTable() {
+    closePanel();
+    showToast('テーブル情報を保存しました');
+  }
+
+  /* ── QR modal ── */
+  function openQR(name, code) {
+    document.getElementById('qr-title').textContent = name + ' QRコード';
+    document.getElementById('qr-sub').textContent   = 'コード：' + code;
+    document.getElementById('qr-modal').classList.add('active');
+  }
+  function closeQR() {
+    document.getElementById('qr-modal').classList.remove('active');
+  }
+
+  /* ── Delete confirm ── */
+  let _deleteTarget = null;
+  function confirmDelete(name) {
+    _deleteTarget = name;
+    document.getElementById('confirm-name').textContent = '「' + name + '」';
+    document.getElementById('confirm-overlay').classList.add('active');
+  }
+  function closeConfirm() {
+    document.getElementById('confirm-overlay').classList.remove('active');
+    _deleteTarget = null;
+  }
+  function executeDelete() {
+    closeConfirm();
+    showToast('「' + _deleteTarget + '」を削除しました');
+  }
+  document.getElementById('confirm-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeConfirm();
+  });
+
+  /* ── Toast ── */
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.style.display = 'flex';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+</script>
+</body>
+</html>

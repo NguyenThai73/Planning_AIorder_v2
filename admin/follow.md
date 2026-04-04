@@ -1,304 +1,301 @@
-# 📋 Admin Flow — AI ORDER ADMIN
-> Tài liệu mô tả luồng thiết lập và vận hành hệ thống Admin, kèm màn hình design tương ứng.
+**Link Design web admin store:** https://www.figma.com/design/hK2f5YpFcnfzNS6KJTMP40/AIOrder?node-id=4529-21847&t=uc3f98ATqDY38V4U-0
 
----
-
-## 🗺️ Tổng quan luồng Admin
+# **🗺️ 管理フロー概要**
 
 ```
-PHASE 1: Cài đặt ban đầu (trước khi vận hành)
-  └─ Step 1 → Thông tin cơ bản cửa hàng
-  └─ Step 2 → Chọn chế độ kinh doanh (WEB/APP Order, Booking ON/OFF...)
-  └─ Step 3 → Cài đặt chức năng chi tiết (Booking, Waitlist, KDS, Takeout...)
-  └─ Step 4 → Cài đặt thông báo & LINE
-  └─ Step 5 → Cài đặt AI & tự động hóa
-  └─ Step 6 → Kết nối thiết bị (Printer, KDS, Display)
+フェーズ1: 初期設定（運用前）
+  └─ Step 1 → 店舗基本情報
+  └─ Step 2 → 営業モードの選択（WEB/APPオーダー、予約 ON/OFF...）
+  └─ Step 3 → 機能別詳細設定（予約、ウェイトリスト、KDS、テイクアウト...）
+  └─ Step 4 → 通知・LINE設定
+  └─ Step 5 → AI・自動化設定
+  └─ Step 6 → デバイス接続（プリンター、KDS、ディスプレイ）
 
-PHASE 2: Tạo Master Data
-  └─ Step 7 → Tạo Menu (đơn lẻ / course / topping)
-  └─ Step 8 → Cài đặt Bàn (Table)
-  └─ Step 9 → Đăng ký Nhân viên (Staff)
-  └─ Step 10 → Nhập danh sách Khách hàng (Customer)
+フェーズ2: マスターデータ作成
+  └─ Step 7 → メニュー作成（単品 / コース / トッピング）
+  └─ Step 8 → テーブル設定
+  └─ Step 9 → スタッフ登録
+  └─ Step 10 → 顧客リストのインポート
 
-PHASE 3: Vận hành hàng ngày
-  └─ Quản lý ca làm việc (Shift)
-  └─ Xem báo cáo (Doanh thu / Đơn hàng / Khách hàng / AI / Đặt bàn)
-  └─ Quản lý thanh toán & chốt ca
+フェーズ3: 日常運用
+  └─ シフト管理
+  └─ レポート閲覧（売上 / 注文 / 顧客 / AI / 予約）
+  └─ 決済管理・日次精算
 ```
 
 ---
 
-## PHASE 1 — Cài đặt ban đầu
+## **フェーズ1 — 初期設定**
 
-### ✅ Step 1: Thông tin cơ bản cửa hàng
-> 📸 **Design:** `A1_001.png`
-> **Đường dẫn:** 店舗設定 → 基本情報設定
+**✅ Step 1: 店舗基本情報**
 
-Các thông tin cần điền trước khi vận hành:
+> 📸 **Design:** `A1_001` **パス:** 店舗設定 → 基本情報設定
+> 
 
-| Mục | Ví dụ |
-|---|---|
-| Tên cửa hàng | さくらレストラン 新宿本店 |
-| Địa chỉ (mã bưu chính) | 160-0023 |
-| Điện thoại | 03-1234-5678 |
-| Tỉnh/Thành phố | 東京都新宿区西新宿 1-1-1 |
-| Giờ mở cửa | 月〜金 11:00–15:00 / 17:00–23:00 |
-| Ngày nghỉ định kỳ | Thứ Hai hàng tuần / Tết (12/30–1/3) |
-| Thuế suất tiêu chuẩn | 10% |
-| Thuế suất giảm | 8% |
-| Đơn vị tiền tệ | JPY (円) |
+運用前に入力が必要な情報：
 
----
-
-### ✅ Step 2: Chọn chế độ kinh doanh
-> 📸 **Design:** `A1_002.png`
-> **Đường dẫn:** 店舗設定 → 営業モード設定
-
-**Đây là bước quan trọng nhất — xác định cách khách hàng đặt hàng:**
-
-#### 🔵 Kênh nhận đơn (Order Channel)
-| Tùy chọn | Mô tả | Bật/Tắt |
-|---|---|---|
-| Tablet tại bàn | Khách order qua màn hình đặt tại bàn | Toggle |
-| LINE / Web Order | Khách order qua LINE Mini App hoặc Website | Toggle |
-| Last Order | Cài đặt giờ last order tự động | Toggle + Giờ |
-
-#### 🔵 AI nhận đơn (Voice / Text)
-| Tùy chọn | Mô tả |
-|---|---|
-| Voice Order (音声注文支援) | AI nhận đơn bằng giọng nói |
-| Text Order (文字注文支援) | AI nhận đơn bằng văn bản chat |
-
-> 💡 **Quyết định cần xác nhận trước khi vận hành:**
-> - Dùng **WEB order** (LINE/Web) hay **APP order** (Tablet tại bàn), hay cả hai?
-> - Bật **Booking (đặt bàn)** hay không? → Cài tiếp ở Step 3
-> - Bật **Waitlist (xếp hàng chờ)** hay không? → Cài tiếp ở Step 3
+| **項目** | **例** |
+| --- | --- |
+| 店舗名 | さくらレストラン 新宿本店 |
+| 住所（郵便番号） | 160-0023 |
+| 電話番号 | 03-1234-5678 |
+| 都道府県/市区町村 | 東京都新宿区西新宿 1-1-1 |
+| 営業時間 | 月〜金 11:00–15:00 / 17:00–23:00 |
+| 定休日 | 毎週月曜日 / 年末年始（12/30～1/3） |
+| 標準税率 | 10% |
+| 軽減税率 | 8% |
+| 通貨単位 | JPY（円） |
 
 ---
 
-### ✅ Step 3: Cài đặt chức năng chi tiết
-> 📸 **Design:** `A1_003.png` → `A1_009.png`
-> **Đường dẫn:** 店舗設定 → 機能別詳細設定
+**✅ Step 2: 営業モードの選択**
 
-Có 7 tab cài đặt, tùy chọn bật/tắt theo nhu cầu cửa hàng:
+> 📸 **Design:** `A1_002`**パス:** 店舗設定 → 営業モード設定
+> 
 
----
+**これは最も重要なステップです — 顧客の注文方法を決定します：**
 
-#### 📌 Tab 1 — Đặt bàn (予約設定)
-> 📸 `A1_003.png`
+**🔵 注文チャンネル（Order Channel）**
 
-| Mục | Cài đặt |
-|---|---|
-| Nhận đặt bàn online | ON / OFF |
-| Chế độ xác nhận | Tự động / Cần xác nhận thủ công |
-| Hình thức thanh toán | Online hoặc tại cửa hàng |
-| Chính sách hủy | Trước X giờ |
-| Hiển thị lịch | 09:00〜23:00 |
-| Thời gian sử dụng / bàn | 60 phút/nhóm |
-| Thời gian dọn dẹp | 15 phút |
-| Nhắc nhở khách | Trước 1 giờ đến |
-| Khung giờ có thể đặt | 11:00–14:00 (T2–T6) / 17:00–22:00 (T2–CN) |
+| **オプション** | **説明** | **ON/OFF** |
+| --- | --- | --- |
+| テーブルタブレット | テーブルに設置された画面から注文 | トグル |
+| LINE / Webオーダー | LINE Mini AppまたはWebサイトから注文 | トグル |
+| ラストオーダー | ラストオーダー時間の自動設定 | トグル + 時間 |
 
----
+**🔵 AI注文（音声 / テキスト）**
 
-#### 📌 Tab 2 — Xếp hàng chờ (待ち順番・受付設定)
-> 📸 `A1_004.png`
+| **オプション** | **説明** |
+| --- | --- |
+| Voice Order（音声注文支援） | AIが音声で注文を受け付ける |
+| Text Order（文字注文支援） | AIがチャットテキストで注文を受け付ける |
 
-| Mục | Cài đặt |
-|---|---|
-| Trạng thái nhận | Waitlist利用 (đang nhận) / 休止 (tạm dừng) |
-| Kênh nhận | Online (Web/LINE) |
-| Ngày nhận | T2–T6 10:00–21:00 / T7 09:00–22:00 / CN 09:00–22:00 |
-| Nhắc nhở khách | Khi còn X nhóm / Tối đa 2 lần / Mỗi 5 phút |
-| Tự động hủy | Sau 10 phút không phản hồi |
-| Máy phát số thứ tự | Có (kết nối USB Printer, dạng A001〜) |
+> 💡 **運用前に確認が必要な決定事項：**
+> 
+> - **WEBオーダー**（LINE/Web）か**APPオーダー**（テーブルタブレット）、またはその両方？
+> - **予約（Booking）**を有効にするか？ → Step 3 で引き続き設定
+> - **ウェイトリスト（順番待ち）**を有効にするか？ → Step 3 で引き続き設定
 
 ---
 
-#### 📌 Tab 3 — Nhận đơn / KDS (注文・受付設定)
-> 📸 `A1_005.png`
+**✅ Step 3: 機能別詳細設定**
 
-| Mục | Cài đặt |
-|---|---|
-| In phiếu đơn | ON / OFF (tự động in) |
-| In phiếu bếp (Kitchen) | ON |
-| Hiển thị icon dị ứng | ON / OFF |
-| Phân loại Drink / Food | ON / OFF |
-| Hands Free Mode | ON / OFF (KDS tự hiển thị, không cần chạm) |
-| KDS cảnh báo thời gian nấu | ON / Cảnh báo sau 30 phút |
-| Cờ đông khách (混雑フラグ) | ON / Tự động set sau 2 giờ vượt chuẩn |
+> 📸 **Design:** `A1_003` → `A1_009` **パス:** 店舗設定 → 機能別詳細設定
+> 
+
+店舗のニーズに応じてON/OFFを切り替える7つの設定タブがあります：
 
 ---
 
-#### 📌 Tab 4 — Thanh toán (会計設定)
-> 📸 `A1_006.png`
+**📌 Tab 1 — 予約設定**
 
-| Mục | Cài đặt |
-|---|---|
-| POS会計 (kết nối POS) | ON / OFF |
-| Thanh toán theo bàn | ON / OFF |
-| Square (Thẻ tín dụng) | ON / OFF |
-| PayPay (QR) | ON / OFF |
-| QR tĩnh | ON / OFF |
-| In biên lai | ON / OFF |
-| Thanh toán thẻ tín dụng | ON / OFF |
+> 📸 `A1_003`
+> 
 
----
-
-#### 📌 Tab 5 — Takeout (テイクアウト設定)
-> 📸 `A1_007.png`
-
-| Mục | Cài đặt |
-|---|---|
-| Nhận đơn Takeout | ON / OFF |
-| Ngày nhận | T2–T6 / Thêm T7, CN nếu cần |
-| Giờ nhận | 10:00–20:00 |
-| Thanh toán | PayPay / Square / Tiền mặt tại quầy |
-| Tin nhắn thông báo | Template LINE: nhận đơn + báo sẵn sàng |
+| **項目** | **設定** |
+| --- | --- |
+| オンライン予約受付 | ON / OFF |
+| 確認モード | 自動 / 手動確認が必要 |
+| 支払い方法 | オンライン または 店舗にて |
+| キャンセルポリシー | X時間前まで |
+| カレンダー表示 | 09:00〜23:00 |
+| 利用時間 / テーブル | 60分/グループ |
+| 片付け時間 | 15分 |
+| 来店リマインド | 来店1時間前 |
+| 予約可能時間帯 | 11:00–14:00（月〜金）/ 17:00–22:00（月〜日） |
 
 ---
 
-#### 📌 Tab 6 — Quản lý ca (シフト設定)
-> 📸 `A1_008.png`
+**📌 Tab 2 — 待ち順番・受付設定**
 
-| Mục | Cài đặt |
-|---|---|
-| Bật chức năng đăng ký ca | ON / OFF |
-| Template LINE: nhận đơn ca | Tự chỉnh nội dung |
-| Template LINE: duyệt / từ chối | Tự chỉnh nội dung |
-| Nhắc nhở trước ca | 24 giờ trước |
+> 📸 `A1_004`
+> 
 
----
-
-#### 📌 Tab 7 — Vận hành cửa hàng (店舗運用設定)
-> 📸 `A1_009.png`
-
-| Mục | Cài đặt |
-|---|---|
-| Âm thanh cảnh báo | ON |
-| Tự động logout | ON (sau X phút không thao tác) |
-| Chat nội bộ nhân viên | ON |
-| Thông báo desktop | ON |
-| Thông báo email | ON / OFF |
-| Tablet Mode | ON / OFF |
-| Kiosk Mode (Self-order) | ON / OFF |
-| Nút gọi nhân viên | Tùy chỉnh (Thêm nước / Dọn bàn / Bát đĩa trẻ em...) |
+| **項目** | **設定** |
+| --- | --- |
+| 受付状態 | Waitlist利用（受付中）/ 休止（一時停止） |
+| 受付チャンネル | オンライン（Web/LINE） |
+| 受付日 | 月〜金 10:00–21:00 / 土 09:00–22:00 / 日 09:00–22:00 |
+| 顧客へのリマインド | 残りXグループ時 / 最大2回 / 5分ごと |
+| 自動キャンセル | 10分間応答なしの場合 |
+| 番号発券機 | あり（USBプリンター接続、A001〜形式） |
 
 ---
 
-### ✅ Step 4: Cài đặt thông báo & LINE
-> 📸 **Design:** `A1_010.png`
-> **Đường dẫn:** 店舗設定 → 通知・メッセージ設定
+**📌 Tab 3 — 注文・受付設定**
 
-| Mục | Cài đặt |
-|---|---|
-| Kết nối LINE Official Account | LINE Business ID + Channel Access Token |
-| Template: Xác nhận đặt bàn | Tự chỉnh nội dung (có biến {{日時}}, {{人数}}...) |
-| Nhắc lịch hẹn trước 1 ngày | ON / Giờ gửi: 18:00 |
-| Template: Hủy đặt bàn | Tự chỉnh |
-| Template: Gọi số Waitlist | Nội dung + X phút trước |
-| Template: Takeout hoàn thành | Tự chỉnh |
-| Cảnh báo nhân viên: đông khách | ON / sau 30 phút |
-| Cảnh báo: chậm trễ bếp (KDS) | ON |
-| Cảnh báo: chậm trễ thanh toán | ON |
-| Nhắc nhở nộp lịch ca | Trước X ngày |
+> 📸 `A1_005`
+> 
+
+| **項目** | **設定** |
+| --- | --- |
+| 注文票印刷 | ON / OFF（自動印刷） |
+| キッチン票印刷 | ON |
+| アレルギーアイコン表示 | ON / OFF |
+| ドリンク / フード分類 | ON / OFF |
+| ハンズフリーモード | ON / OFF（KDSが自動表示、タッチ不要） |
+| KDS調理時間アラート | ON / 30分後にアラート |
+| 混雑フラグ | ON / 基準超過後2時間で自動セット |
 
 ---
 
-### ✅ Step 5: Cài đặt AI & tự động hóa
-> 📸 **Design:** `A1_011.png` → `A1_014.png`
-> **Đường dẫn:** 店舗設定 → AI・自動化設定
+**📌 Tab 4 — 会計設定**
 
-Có 4 tab cài đặt:
+> 📸 `A1_006`
+> 
 
----
-
-#### 🤖 Tab 1 — Cài đặt cơ bản AI (基本設定)
-> 📸 `A1_011.png`
-
-| Mục | Cài đặt |
-|---|---|
-| Tên AI | Hana |
-| Vai trò | 店員アシスタント (Trợ lý nhân viên) |
-| Tốc độ phản hồi | 1.5 giây |
-| Số lần phát tối đa | 5 lần |
-| Kiểu nhân vật | Nữ nhân viên lịch sự (女性店員風・丁寧) |
-| Ngôn ngữ | Tiếng Nhật / Tiếng Anh / Tiếng Việt |
-| Prompt đa ngôn ngữ | Tự chỉnh cho từng ngôn ngữ |
-| Từ cấm (NG ワード) | Từ không phù hợp, thông tin cá nhân... |
+| **項目** | **設定** |
+| --- | --- |
+| POS会計（POS連携） | ON / OFF |
+| テーブル別会計 | ON / OFF |
+| Square（クレジットカード） | ON / OFF |
+| PayPay（QR） | ON / OFF |
+| 静的QR | ON / OFF |
+| レシート印刷 | ON / OFF |
+| クレジットカード決済 | ON / OFF |
 
 ---
 
-#### 🤖 Tab 2 — Kịch bản hội thoại (会話ロジック)
-> 📸 `A1_012.png`
+**📌 Tab 5 — テイクアウト設定**
 
-Tạo danh sách câu hỏi thường gặp → AI trả lời cố định:
+> 📸 `A1_007`
+> 
 
-| Từ khóa | Câu trả lời AI | Loại |
-|---|---|---|
-| トイレ (nhà vệ sinh) | トイレは奥の右側にございます | Cố định |
-| おすすめ (gợi ý) | 本日のおすすめは「焼き鳥セット」です！ | Cố định |
-| 営業時間 (giờ mở cửa) | 月〜金：11:00-22:00、土日：10:00-23:00 | Cố định |
-
----
-
-#### 🤖 Tab 3 — Dữ liệu kết nối AI (AIデータ連携設定)
-> 📸 `A1_013.png`
-
-| Dữ liệu | Trạng thái | Mô tả |
-|---|---|---|
-| Thông tin Menu | ✅ Kết nối | Tên, giá, dị ứng, tag, gợi ý... |
-| Tồn kho / Đông khách | ✅ Kết nối | Real-time KDS, hàng chờ bếp... |
-| Lịch sử khách hàng | ☐ Chưa kết nối | Đơn cũ, sở thích, dị ứng... |
-
-Cài đặt **loại trừ category** không cần AI tư vấn:
-- Loại trừ: Takeout専用 / 廃番品 / スタッフ専用
+| **項目** | **設定** |
+| --- | --- |
+| テイクアウト注文受付 | ON / OFF |
+| 受付日 | 月〜金 / 必要に応じて土・日を追加 |
+| 受付時間 | 10:00–20:00 |
+| 支払い方法 | PayPay / Square / 店頭現金 |
+| 通知メッセージ | LINEテンプレート：注文受付＋準備完了通知 |
 
 ---
 
-#### 🤖 Tab 4 — Engine gợi ý (おすすめエンジン設定)
-> 📸 `A1_014.png`
+**📌 Tab 6 — シフト設定**
 
-| Mục | Cài đặt |
-|---|---|
-| Thứ tự ưu tiên tag | おすすめ → 人気 → 早出し → カスタマイズ可 |
-| Chế độ bình thường | Gợi ý từ tất cả menu |
-| Chế độ đông khách | Ưu tiên món làm nhanh |
-| Chế độ Last Order | Chỉ Drink + món làm nhanh |
-| Ưu tiên món đã order lại | 70% ưu tiên |
-| Không lặp menu liên tiếp | Trong 7 ngày qua |
-| Điều chỉnh theo thời tiết | ON |
-| Số món hiển thị | 3 / 5 / 8 món |
+> 📸 `A1_008`
+> 
+
+| **項目** | **設定** |
+| --- | --- |
+| シフト登録機能 | ON / OFF |
+| LINEテンプレート：シフト受付 | 内容をカスタマイズ |
+| LINEテンプレート：承認 / 却下 | 内容をカスタマイズ |
+| シフト前リマインド | 24時間前 |
 
 ---
 
-### ✅ Step 6: Kết nối thiết bị
-> 📸 **Design:** `A1_015.png`
-> **Đường dẫn:** デバイス連携設定
+**📌 Tab 7 — 店舗運用設定**
 
-| Thiết bị | IP Address | Trạng thái |
-|---|---|---|
-| Máy in bếp (食事) RP-F10 | 192.168.1.10 | ✅ Kết nối OK |
-| Máy in bar (ドリンク) P-D20 | 192.168.1.11 | ✅ Kết nối OK |
-| Máy in hall / POS (レシート) | 192.168.1.12 | ✅ Kết nối OK |
-| Máy in phiếu số (発券機) | 192.168.1.13 | ✅ Kết nối OK |
+> 📸 `A1_009.pg`
+> 
 
-**KDS (Kitchen Display System):**
-- KDS Bếp: Timeout 3 món / Tự ẩn sau 60 giây / Cảnh báo ON
-- KDS Bar: Phân loại theo đồ uống
-
-**Display (Bảng gọi khách):**
-- Hiển thị số thứ tự / trạng thái chờ / vào bàn
+| **項目** | **設定** |
+| --- | --- |
+| 警告音 | ON |
+| 自動ログアウト | ON（X分間操作なしの場合） |
+| スタッフ内部チャット | ON |
+| デスクトップ通知 | ON |
+| メール通知 | ON / OFF |
+| タブレットモード | ON / OFF |
+| キオスクモード（セルフオーダー） | ON / OFF |
+| スタッフ呼び出しボタン | カスタマイズ可能（お水追加 / テーブル片付け / お子様食器...） |
 
 ---
 
-## PHASE 2 — Tạo Master Data
+**✅ Step 4: 通知・LINE設定**
 
-### ✅ Step 7: Quản lý Menu
-> 📸 **Design:** `A1_016.png` → `A1_022.png`
-> **Đường dẫn:** マスタ管理 → メニュー管理
+> 📸 **Design:** `A1_010` **パス:** 店舗設定 → 通知・メッセージ設定
+> 
 
-#### Luồng tạo menu mới (6 tab):
+| **項目** | **設定** |
+| --- | --- |
+| LINE公式アカウント連携 | LINE Business ID + Channel Access Token |
+| テンプレート：予約確認 | 内容をカスタマイズ（変数 {{日時}}、{{人数}} など） |
+| 前日リマインド | ON / 送信時間：18:00 |
+| テンプレート：予約キャンセル | カスタマイズ |
+| テンプレート：ウェイトリスト呼び出し | 内容 + X分前 |
+| テンプレート：テイクアウト完了 | カスタマイズ |
+| スタッフアラート：混雑時 | ON / 30分後 |
+| アラート：キッチン遅延（KDS） | ON |
+| アラート：会計遅延 | ON |
+| シフト提出リマインド | X日前 |
+
+---
+
+**✅ Step 5: AI・自動化設定**
+
+> 📸 **Design:** `A1_011` → `A1_014` **パス:** 店舗設定 → AI・自動化設定
+> 
+
+---
+
+**🤖 Tab 3 — AIデータ連携設定**
+
+> 📸 `A1_013`
+> 
+
+| **データ** | **状態** | **説明** |
+| --- | --- | --- |
+| メニュー情報 | ✅ 連携済み | 名前、価格、アレルギー、タグ、おすすめ... |
+| 在庫 / 混雑状況 | ✅ 連携済み | リアルタイムKDS、キッチン待ち... |
+| 顧客履歴 | ☐ 未連携 | 過去の注文、好み、アレルギー... |
+
+**除外カテゴリ**の設定（AIアドバイス不要）：
+
+- 除外：Takeout専用 / 廃番品 / スタッフ専用
+
+---
+
+**🤖 Tab 4 — おすすめエンジン設定**
+
+> 📸 `A1_014`
+> 
+
+| **項目** | **設定** |
+| --- | --- |
+| タグ優先順位 | おすすめ → 人気 → 早出し → カスタマイズ可 |
+| 通常モード | 全メニューからおすすめ |
+| 混雑モード | 提供の早い料理を優先 |
+| ラストオーダーモード | ドリンク＋提供の早い料理のみ |
+| 再注文優先 | 70%優先 |
+| 連続同じメニューなし | 過去7日間 |
+| 天気による調整 | ON |
+| 表示料理数 | 3 / 5 / 8品 |
+
+---
+
+**✅ Step 6: デバイス接続**
+
+> 📸 **Design:** `A1_015` **パス:** デバイス連携設定
+> 
+
+| **デバイス** | **IPアドレス** | **状態** |
+| --- | --- | --- |
+| キッチンプリンター（食事）RP-F10 | 192.168.1.10 | ✅ 接続OK |
+| バープリンター（ドリンク）P-D20 | 192.168.1.11 | ✅ 接続OK |
+| ホール/POSプリンター（レシート） | 192.168.1.12 | ✅ 接続OK |
+| 発券機プリンター | 192.168.1.13 | ✅ 接続OK |
+
+**KDS（Kitchen Display System）：**
+
+- KDS キッチン：タイムアウト 3品 / 60秒後に自動非表示 / アラート ON
+- KDS バー：飲み物別に分類
+
+**ディスプレイ（呼び出し案内板）：**
+
+- 番号 / 待機状態 / 着席を表示
+
+---
+
+**フェーズ2 — マスターデータ作成**
+
+**✅ Step 7: メニュー管理**
+
+> 📸 **Design:** `A1_016` → `A1_022` **パス:** マスタ管理 → メニュー管理
+> 
+
+**新規メニュー作成フロー（6タブ）：**
 
 ```
 [基本情報] → [カスタマイズ] → [レシピ] → [栄養成分] → [AI設定] → [画像]
@@ -306,289 +303,310 @@ Cài đặt **loại trừ category** không cần AI tư vấn:
 
 ---
 
-**① Thông tin cơ bản** — `A1_017.png`
+**① 基本情報** — `A1_017`
 
-| Mục | Ví dụ |
-|---|---|
-| Tên sản phẩm (quản lý) | とんこつラーメン |
-| Mã sản phẩm | F-001 |
-| Tên hiển thị (POS) | とんこつラーメン |
-| Category | フード |
-| Tên đa ngôn ngữ | EN: Tonkotsu Ramen / 中文: 豚骨拉面 |
-| Sub-category | ラーメン |
-| Thuế | Tiêu chuẩn 10% / Giảm 8% |
-| Tag | 人気商品 / 季節限定 / テイクアウト対応 |
-| Giá bán | ¥980 |
-| Giá vốn | ¥350 |
-| Quản lý tồn kho | ON / OFF |
-| Thời gian bán | 01/10/2025 〜 31/12/2025 |
-| Trạng thái bán | 販売中 / 一時停止 / 在庫切れ |
-
----
-
-**② Tùy chỉnh (Customize)** — `A1_018.png`
-
-| Mục | Ví dụ |
-|---|---|
-| Bật Customize | ✅ |
-| Nhóm Customize | Size (単一選択・ラジオ) |
-| Tùy chọn | 大 +¥100 / 中 ±0 (default) / 小 -¥50 |
+| **項目** | **例** |
+| --- | --- |
+| 商品名（管理用） | とんこつラーメン |
+| 商品コード | F-001 |
+| 表示名（POS） | とんこつラーメン |
+| カテゴリ | フード |
+| 多言語名 | EN: Tonkotsu Ramen / 中文: 豚骨拉面 |
+| サブカテゴリ | ラーメン |
+| 税率 | 標準10% / 軽減8% |
+| タグ | 人気商品 / 季節限定 / テイクアウト対応 |
+| 販売価格 | ¥980 |
+| 原価 | ¥350 |
+| 在庫管理 | ON / OFF |
+| 販売期間 | 01/10/2025 〜 31/12/2025 |
+| 販売状態 | 販売中 / 一時停止 / 在庫切れ |
 
 ---
 
-**③ Công thức (Recipe)** — `A1_019.png`
+**② カスタマイズ** — `A1_018`
 
-| Mục | Ví dụ |
-|---|---|
-| Nguyên liệu | 豚骨 — 500g |
-| Bước chế biến 1 | 豚骨を炊いてスープを取る |
-| Bước chế biến 2 | 麺を炊いで盛り付ける |
-| Ảnh/Video tham khảo | Upload file / URL video |
-
----
-
-**④ Thành phần dinh dưỡng & Dị ứng** — `A1_020.png`
-
-| Mục | Ví dụ |
-|---|---|
-| Năng lượng | 650 kcal |
-| Protein | 21.5 g |
-| Allergen | 卵 / 乳 / 小麦 / えび / かに / そば / 落花生 |
+| **項目** | **例** |
+| --- | --- |
+| カスタマイズを有効化 | ✅ |
+| カスタマイズグループ | サイズ（単一選択・ラジオ） |
+| オプション | 大 +¥100 / 中 ±0（デフォルト）/ 小 -¥50 |
 
 ---
 
-**⑤ Cài đặt AI** — `A1_021.png`
+**③ レシピ** — `A1_019`
 
-| Mục | Ví dụ |
-|---|---|
-| Đưa vào danh sách AI gợi ý | ✅ |
-| Mô tả AI (EN/JP/中文) | "This cheese burger, perfect for..." |
-| Điều kiện gợi ý | Mọi ngày / Khối lượng bình thường |
-| Thời gian chế biến | Ngắn / Bình thường / Dài |
-| Hạn chế (NG) | Bò / Gà / Đồ chay / NG Staff |
-| Upsell liên quan | Bia / Highball / Wine |
-| Ưu tiên gợi ý | 3 – Bình thường |
+| **項目** | **例** |
+| --- | --- |
+| 材料 | 豚骨 — 500g |
+| 調理手順1 | 豚骨を炊いてスープを取る |
+| 調理手順2 | 麺を炊いで盛り付ける |
+| 参考画像/動画 | ファイルアップロード / 動画URL |
 
 ---
 
-**⑥ Hình ảnh** — `A1_022.png`
+**④ 栄養成分・アレルギー** — `A1_020`
 
-| Mục | Cài đặt |
-|---|---|
-| Ảnh chính (POS/AI/Web) | Upload PNG/JPG/GIF — tối đa 800×400px |
-| Gallery (ảnh phụ) | Thêm nhiều ảnh bổ sung |
-
----
-
-#### Cài đặt Course (コース設定) — `A1_023.png`
-
-| Course | Loại | Giá | Thời gian |
-|---|---|---|---|
-| プレミアムディナーコース | Thông thường | ¥5,500 | 90 phút |
-| 飲み放題コース | Uống thả ga | ¥1,800 | 60 phút |
-| 90分食べ放題 | Ăn thả ga | ¥3,980 | 90 phút |
-| ランチセットA | Thông thường | ¥1,200 | Không giới hạn |
-
-Cài đặt chi tiết từng course: hiển thị trên trang đặt bàn, số nhóm tối đa, menu áp dụng.
+| **項目** | **例** |
+| --- | --- |
+| カロリー | 650 kcal |
+| たんぱく質 | 21.5 g |
+| アレルゲン | 卵 / 乳 / 小麦 / えび / かに / そば / 落花生 |
 
 ---
 
-### ✅ Step 8: Quản lý Bàn (Table)
-> 📸 **Design:** `A1_024.png`
-> **Đường dẫn:** マスタ管理 → テーブル管理
+**⑤ AI設定** — `A1_021`
 
-| Tên bàn | Khu vực | Sức chứa | Loại | Ghi chú |
-|---|---|---|---|---|
-| テーブルA-01 | ホールA | 4 người | Hút thuốc | Gần cửa vào |
-| テーブルB-05 | Phòng riêng | 2 người | Không hút | — |
-| テーブルC-12 | ホールB | 6 người | Không hút | — |
-
-- Bật/tắt hiển thị trên hệ thống đặt bàn
-- Phát QR code riêng cho từng bàn
-
----
-
-### ✅ Step 9: Quản lý Nhân viên (Staff)
-> 📸 **Design:** `A1_025.png`
-> **Đường dẫn:** マスタ管理 → スタッフ管理
-
-| ID | Tên | Loại | Vai trò | LINE | Trạng thái |
-|---|---|---|---|---|---|
-| #S001 | 山田 太郎 | Nhân viên | Quản lý (店長) | ✅ Đã kết nối | Có hiệu lực |
-| #S010 | 佐藤 花子 | Part-time | Hall | ❌ Chưa kết nối | Chờ duyệt |
-| #S011 | 鈴木 一郎 | Part-time | Kitchen | ✅ Đã kết nối | Đã duyệt |
-
-- Phân quyền theo vai trò (店長 / ホール / キッチン / カウンター...)
-- Kết nối LINE để nhận thông báo ca / gọi nhân viên
+| **項目** | **例** |
+| --- | --- |
+| AIおすすめリストに追加 | ✅ |
+| AI説明文（EN/JP/中文） | "This cheese burger, perfect for..." |
+| おすすめ条件 | 毎日 / 通常量 |
+| 調理時間 | 短い / 普通 / 長い |
+| 制限（NG） | 牛肉 / 鶏肉 / ベジタリアン / NGスタッフ |
+| 関連アップセル | ビール / ハイボール / ワイン |
+| おすすめ優先度 | 3 – 通常 |
 
 ---
 
-### ✅ Step 10: Quản lý Khách hàng (Customer)
-> 📸 **Design:** `A1_026.png`
-> **Đường dẫn:** マスタ管理 → 顧客管理
+**⑥ 画像** — `A1_022`
 
-| Tên | Điện thoại | Số lần đến | Tổng chi | Ghi chú đặc biệt |
-|---|---|---|---|---|
-| 田中 太郎 | 090-XXXX-5678 | 15 lần (VIP) | ¥185,000 | Đăng ký sinh nhật |
-| 佐藤 舞 | 090-XXXX-4321 | 5 lần | ¥45,000 | Dị ứng tôm |
-| 高橋 健太 | 080-XXXX-9999 | 1 lần | ¥3,200 | Đăng ký kỷ niệm (1/15) |
-| 山田 花子 | 03-XXXX-1111 | 25 lần (VIP) | ¥350,000 | Luôn muốn bàn cạnh cửa sổ |
+| **項目** | **設定** |
+| --- | --- |
+| メイン画像（POS/AI/Web） | PNG/JPG/GIFをアップロード — 最大800×400px |
+| ギャラリー（サブ画像） | 追加画像を複数追加 |
 
 ---
 
-## PHASE 3 — Vận hành hàng ngày
+**コース設定 — `A1_023`**
 
-### 📅 Quản lý ca làm việc (Shift)
-> 📸 **Design:** `A1_027.png`
-> **Đường dẫn:** マスタ管理 → シフト管理
+| **コース** | **タイプ** | **価格** | **時間** |
+| --- | --- | --- | --- |
+| プレミアムディナーコース | 通常 | ¥5,500 | 90分 |
+| 飲み放題コース | 飲み放題 | ¥1,800 | 60分 |
+| 90分食べ放題 | 食べ放題 | ¥3,980 | 90分 |
+| ランチセットA | 通常 | ¥1,200 | 制限なし |
 
-**Tạo pattern ca:**
-- Tên ca: ランチタイム / Giờ: 10:00–15:00 / Nghỉ: 12:00–12:30
-- Vị trí: ホール / キッチン / カウンター / デリバリー
-
-**Gửi thông báo tuyển ca qua LINE:**
-- Chọn ngày, ca, số lượng cần
-- Nhấn **「LINEにスタッフ募集を送信する」**
-- Nhân viên đã kết nối LINE nhận được thông báo và đăng ký
+各コースの詳細設定：予約ページへの表示、最大グループ数、適用メニュー。
 
 ---
 
-### 📊 Báo cáo & Phân tích
+**✅ Step 8: テーブル管理**
 
-#### Doanh thu (売上レポート)
-> 📸 `A1_028.png` + `A1_031.png`
+> 📸 **Design:** `A1_024` **パス:** マスタ管理 → テーブル管理
+> 
 
-| KPI | Ví dụ |
-|---|---|
-| Doanh thu tháng | ¥381,922 (đạt 76.4% mục tiêu) |
-| Khách đơn giá hôm nay | ¥2,220 |
-| Tỷ lệ đạt mục tiêu | 91.4% |
-| Phân tích Takeout / Tại chỗ | Donut chart (65% / 35%) |
-| Phân tích theo mùa | Mùa thu ¥5.1M (cao nhất) |
-| Phân tích theo ngày trong tuần | Thứ 7 cao nhất |
-| Dashboard real-time | Doanh thu 60 phút gần nhất |
-| Đặt mục tiêu ngày | Ngày thường ¥600,000 / Lễ ¥800,000 |
+| **テーブル名** | **エリア** | **収容人数** | **タイプ** | **備考** |
+| --- | --- | --- | --- | --- |
+| テーブルA-01 | ホールA | 4名 | 喫煙 | 入口近く |
+| テーブルB-05 | 個室 | 2名 | 禁煙 | — |
+| テーブルC-12 | ホールB | 6名 | 禁煙 | — |
+- 予約システムへの表示をON/OFFにする
+- 各テーブルに個別のQRコードを発行する
 
 ---
 
-#### Đơn hàng & Phục vụ (注文・提供レポート)
-> 📸 `A1_029.png`
+**✅ Step 9: スタッフ管理**
 
-| KPI | Ví dụ |
-|---|---|
-| Lượt khách hôm nay | 172 (+13 so hôm qua) |
-| Tổng đơn hôm nay | 345 (+8.5%) |
-| Tỷ lệ phục vụ đúng hạn | 100% (trong 10 phút) |
-| Phân tích theo giờ | Biểu đồ cột theo giờ |
+> 📸 **Design:** `A1_025` **パス:** マスタ管理 → スタッフ管理
+> 
 
----
-
-#### Khách hàng (顧客レポート)
-> 📸 `A1_030.png`
-
-| KPI | Ví dụ |
-|---|---|
-| Tổng khách | 2,847 |
-| Khách mới tháng này | 423 (+18.5%) |
-| Tỷ lệ quay lại | 68.2% |
-| Tần suất đến trung bình | 2.4 lần/tháng |
-
-Top khách VIP theo giá trị trọn đời (生涯価値), phân tích theo độ tuổi / giờ đến / hình thức dùng.
+| **ID** | **氏名** | **区分** | **役割** | **LINE** | **状態** |
+| --- | --- | --- | --- | --- | --- |
+| #S001 | 山田 太郎 | 社員 | 店長 | ✅ 連携済み | 有効 |
+| #S010 | 佐藤 花子 | アルバイト | ホール | ❌ 未連携 | 承認待ち |
+| #S011 | 鈴木 一郎 | アルバイト | キッチン | ✅ 連携済み | 承認済み |
+- 役割別に権限を設定（店長 / ホール / キッチン / カウンター...）
+- LINEを連携してシフト通知 / スタッフ呼び出しを受信する
 
 ---
 
-#### Đặt bàn (予約レポート)
+**✅ Step 10: 顧客管理**
+
+> 📸 **Design:** `A1_026` **パス:** マスタ管理 → 顧客管理
+> 
+
+| **氏名** | **電話番号** | **来店回数** | **累計支出** | **特記事項** |
+| --- | --- | --- | --- | --- |
+| 田中 太郎 | 090-XXXX-5678 | 15回（VIP） | ¥185,000 | 誕生日登録済み |
+| 佐藤 舞 | 090-XXXX-4321 | 5回 | ¥45,000 | えびアレルギー |
+| 高橋 健太 | 080-XXXX-9999 | 1回 | ¥3,200 | 記念日登録（1/15） |
+| 山田 花子 | 03-XXXX-1111 | 25回（VIP） | ¥350,000 | 常に窓際の席を希望 |
+
+---
+
+**フェーズ3 — 日常運用**
+
+**📅 シフト管理**
+
+> 📸 **Design:** `A1_027` **パス:** マスタ管理 → シフト管理
+> 
+
+**シフトパターンの作成：**
+
+- シフト名：ランチタイム / 時間：10:00–15:00 / 休憩：12:00–12:30
+- ポジション：ホール / キッチン / カウンター / デリバリー
+
+**LINEでシフト募集通知を送信：**
+
+- 日付、シフト、必要人数を選択
+- **「LINEにスタッフ募集を送信する」**をクリック
+- LINE連携済みのスタッフが通知を受け取り登録する
+
+---
+
+**📊 レポート・分析**
+
+**売上レポート**
+
+> 📸 `A1_028` + `A1_031`
+> 
+
+| **KPI** | **例** |
+| --- | --- |
+| 月間売上 | ¥381,922（目標76.4%達成） |
+| 本日の客単価 | ¥2,220 |
+| 目標達成率 | 91.4% |
+| テイクアウト / 店内分析 | ドーナツチャート（65% / 35%） |
+| 季節分析 | 秋 ¥5.1M（最高） |
+| 曜日別分析 | 土曜日が最高 |
+| リアルタイムダッシュボード | 直近60分間の売上 |
+| 日次目標設定 | 平日 ¥600,000 / 祝日 ¥800,000 |
+
+---
+
+**注文・提供レポート**
+
+> 📸 `A1_029`
+> 
+
+| **KPI** | **例** |
+| --- | --- |
+| 本日来客数 | 172名（昨日比+13） |
+| 本日総注文数 | 345件（+8.5%） |
+| 時間内提供率 | 100%（10分以内） |
+| 時間帯別分析 | 時間帯別棒グラフ |
+
+---
+
+**顧客レポート**
+
+> 📸 `A1_030`
+> 
+
+| **KPI** | **例** |
+| --- | --- |
+| 総顧客数 | 2,847 |
+| 今月の新規顧客 | 423名（+18.5%） |
+| リピート率 | 68.2% |
+| 平均来店頻度 | 2.4回/月 |
+
+生涯価値順のVIP顧客ランキング、年齢 / 来店時間 / 利用形態別分析。
+
+---
+
+**予約レポート**
+
 > 📸 `A1_032.png`
+> 
 
-| KPI | Ví dụ |
-|---|---|
-| Tỷ lệ lấp đầy tháng | 85% |
-| Tỷ lệ hủy | 7% |
-| Khách đơn giá trung bình | ¥3,500 |
-| Số đặt bàn qua LINE | 120 lượt |
-| Kênh đặt phổ biến nhất | LINE Mini App |
-| Giờ cao điểm | 19:00–20:00 |
-
----
-
-#### AI Engine (AIエンジンレポート)
-> 📸 `A1_033.png`
-
-| KPI | Ví dụ |
-|---|---|
-| Tỷ lệ dùng Voice Order | 45% |
-| Tỷ lệ chấp nhận gợi ý AI | 32% |
-| Lỗi nhận dạng giọng | 3.1% (mục tiêu <2%) |
-| Đóng góp doanh thu từ AI | +¥150,000 |
-
-Top keyword khách hay dùng: あっさりしたもの / 今すぐ提供 / 辛いメニュー...
-
-Hiệu quả gợi ý: "Gợi ý tráng miệng sau ăn" đạt 45% chấp nhận, tăng +¥350/khách.
+| **KPI** | **例** |
+| --- | --- |
+| 月間稼働率 | 85% |
+| キャンセル率 | 7% |
+| 平均客単価 | ¥3,500 |
+| LINE経由の予約数 | 120件 |
+| 最も人気の予約チャンネル | LINE Mini App |
+| ピーク時間帯 | 19:00–20:00 |
 
 ---
 
-### 💳 Quản lý Thanh toán & Chốt ca
+**AIエンジンレポート**
 
-#### Lịch sử giao dịch (決済取引履歴)
-> 📸 `A1_034.png`
+> 📸 `A1_033`
+> 
 
-Xem toàn bộ transaction: ID / Giờ / Loại thanh toán / Số tiền / Phí / Nhân viên phụ trách
-- Hỗ trợ lọc theo ngày, loại thanh toán, trạng thái
-- Có trường hợp **返金 (hoàn tiền)** được ghi rõ lý do
+| **KPI** | **例** |
+| --- | --- |
+| 音声注文利用率 | 45% |
+| AIおすすめ採用率 | 32% |
+| 音声認識エラー率 | 3.1%（目標<2%） |
+| AIによる売上貢献 | +¥150,000 |
 
----
+顧客がよく使うキーワードトップ：あっさりしたもの / 今すぐ提供 / 辛いメニュー...
 
-#### Chốt ca (日次精算レポート)
-> 📸 `A1_036.png`
-
-| Mục | Ví dụ |
-|---|---|
-| Doanh thu POS | ¥125,500 |
-| Thực thu (kiểm đếm thực tế) | ¥125,100 |
-| Chênh lệch | **-¥400** (tiền mặt thiếu) |
-| Ghi chú của nhân viên chốt | Nhập lý do chênh lệch |
+おすすめ効果：「食後のデザートおすすめ」が採用率45%を達成、+¥350/客の増加。
 
 ---
 
-#### Thuế & Phí thanh toán (税率・手数料設定)
-> 📸 `A1_035.png`
+**💳 決済管理・日次精算**
 
-| Loại | Dịch vụ | Phí |
-|---|---|---|
-| Thẻ tín dụng | Square | 3.25% |
-| QR Code | PayPay | 1.98% |
-| Điện tử (IC) | Airペイ | 2.90% |
+**決済取引履歴**
 
----
+> 📸 `A1_034`
+> 
 
-#### Cài đặt hóa đơn / layout (領収書・レイアウト設定)
-> 📸 `A1_037.png`
+全トランザクションを閲覧：ID / 時間 / 支払い種別 / 金額 / 手数料 / 担当スタッフ
 
-| Mục | Cài đặt |
-|---|---|
-| Logo | Upload JPEG/PNG (200×50px) |
-| Tên công ty phát hành | 株式会社さくらフード |
-| Số đăng ký Invoice | T123456789123 |
-| Footer message | またのお越しをよりお待ちしております。 |
+- 日付、支払い種別、状態でフィルタリング可能
+- **返金**の場合は理由が明記される
 
 ---
 
-## 📌 Checklist trước khi vận hành
+**日次精算レポート**
 
-```
-[ ] Step 1: Điền đầy đủ thông tin cơ bản cửa hàng
-[ ] Step 2: Xác định kênh nhận đơn (Tablet / LINE / Web)
-[ ] Step 2: Quyết định bật/tắt Booking, Waitlist, Voice Order
-[ ] Step 3: Cài đặt chi tiết theo từng tính năng đã bật
-[ ] Step 4: Kết nối LINE Official Account + cài template thông báo
-[ ] Step 5: Cài đặt AI (Tên, ngôn ngữ, kịch bản hội thoại, dữ liệu kết nối)
-[ ] Step 6: Kết nối thiết bị (Printer, KDS, Display)
-[ ] Step 7: Nhập toàn bộ menu (tên, giá, ảnh, AI setting)
-[ ] Step 7: Tạo Course / Topping nếu có
-[ ] Step 8: Đăng ký tất cả bàn + phát QR code
-[ ] Step 9: Đăng ký nhân viên + kết nối LINE
-[ ] Step 10: Nhập danh sách khách hàng thân thiết (nếu có)
-[ ] Test: Gửi 1 đơn thử toàn luồng từ khách → bếp → thanh toán
-[ ] Test: Gọi AI thử và kiểm tra phản hồi
-[ ] Test: In thử phiếu bếp + biên lai
-```
+> 📸 `A1_036`
+> 
+
+| **項目** | **例** |
+| --- | --- |
+| POS売上 | ¥125,500 |
+| 実際の収入（実数確認） | ¥125,100 |
+| 差額 | **-¥400**（現金不足） |
+| 精算担当者のメモ | 差額の理由を入力 |
+
+---
+
+**税率・手数料設定**
+
+> 📸 `A1_035`
+> 
+
+| **種別** | **サービス** | **手数料** |
+| --- | --- | --- |
+| クレジットカード | Square | 3.25% |
+| QRコード | PayPay | 1.98% |
+| 電子マネー（IC） | Airペイ | 2.90% |
+
+---
+
+**領収書・レイアウト設定**
+
+> 📸 `A1_037`
+> 
+
+| **項目** | **設定** |
+| --- | --- |
+| ロゴ | JPEG/PNGをアップロード（200×50px） |
+| 発行会社名 | 株式会社さくらフード |
+| インボイス登録番号 | T123456789123 |
+| フッターメッセージ | またのお越しをよりお待ちしております。 |
+
+---
+
+**📌 運用前チェックリスト**
+
+- [ ]  `Step 1: 店舗基本情報を全て入力する
+Step 2: 注文チャンネルを確定する（タブレット / LINE / Web）
+Step 2: 予約、ウェイトリスト、音声注文のON/OFFを決定する
+Step 3: 有効にした各機能の詳細設定を行う
+Step 4: LINE公式アカウントを連携し、通知テンプレートを設定する
+Step 5: AI設定を行う（名前、言語、会話シナリオ、連携データ）
+Step 6: デバイスを接続する（プリンター、KDS、ディスプレイ）
+Step 7: 全メニューを入力する（名前、価格、画像、AI設定）
+Step 7: コース / トッピングがある場合は作成する
+Step 8: 全テーブルを登録し、QRコードを発行する
+Step 9: スタッフを登録し、LINEを連携する
+Step 10: 常連客リストをインポートする（ある場合）
+テスト: 顧客 → キッチン → 会計の全フローで1件テスト注文を送信する
+テスト: AIを試しに呼び出し、応答を確認する
+テスト: キッチン票とレシートの試し印刷を行う`

@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIOrder Admin — セットアップ概要</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Logic Screen Extras ── */
+    .phase-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .phase-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      font-weight: 800;
+      font-size: 0.8rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .phase-badge.p1 { background: #3b82f6; }
+    .phase-badge.p2 { background: #8b5cf6; }
+    .phase-badge.p3 { background: #10b981; }
+
+    .phase-title { font-size: 1rem; font-weight: 700; color: var(--color-gray-900); }
+    .phase-subtitle { font-size: 0.75rem; color: var(--color-gray-500); }
+
+    .step-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      transition: box-shadow var(--transition), border-color var(--transition);
+      text-decoration: none;
+      color: inherit;
+    }
+    .step-card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--color-primary);
+    }
+    .step-number {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--color-primary-light);
+      color: var(--color-primary);
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-number.p2 { background: #ede9fe; color: #7c3aed; }
+    .step-number.p3 { background: #d1fae5; color: #065f46; }
+
+    .step-info { flex: 1; min-width: 0; }
+    .step-label { font-size: 0.8rem; font-weight: 600; color: var(--color-gray-800); }
+    .step-desc { font-size: 0.72rem; color: var(--color-gray-500); margin-top: 2px; line-height: 1.4; }
+    .step-screens {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .screen-chip {
+      font-size: 0.65rem;
+      padding: 1px 7px;
+      border-radius: 99px;
+      background: var(--color-gray-100);
+      color: var(--color-gray-500);
+      font-weight: 600;
+    }
+
+    .flow-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--color-gray-300);
+      font-size: 1.2rem;
+      padding: 4px 0;
+    }
+
+    .legend-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--color-gray-600);
+    }
+
+    .quick-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      background: var(--color-white);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--color-gray-700);
+      text-decoration: none;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .quick-link:hover {
+      background: var(--color-primary-light);
+      border-color: var(--color-primary);
+      color: var(--color-primary-dark);
+    }
+    .quick-link-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <!-- Sidebar placeholder -->
+  <div id="sidebar-placeholder"></div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <!-- Header placeholder -->
+    <div id="header-placeholder"></div>
+
+    <div class="page-content">
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <span>ホーム</span>
+        <span class="breadcrumb-sep">›</span>
+        <span>セットアップ概要</span>
+      </div>
+
+      <!-- Page header -->
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">🗺️ セットアップ概要・画面フロー</h1>
+          <p class="page-subtitle">店舗の初期設定からマスタデータ作成、日常運用までの全フローを確認できます。</p>
+        </div>
+        <a href="A1_001.html" class="btn btn-primary">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          セットアップ開始
+        </a>
+      </div>
+
+      <!-- Progress overview -->
+      <div class="card" style="margin-bottom: 24px;">
+        <div class="card-body" style="padding: 20px 24px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:0.85rem; font-weight:700; color:var(--color-gray-900)">初期設定の進捗</span>
+            <span style="font-size:0.8rem; color:var(--color-gray-500)">0 / 10 ステップ完了</span>
+          </div>
+          <div class="progress" style="height:10px;">
+            <div class="progress-bar" style="width:0%"></div>
+          </div>
+          <div class="legend-row" style="margin-top:14px;">
+            <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#3b82f6;display:inline-block"></span>フェーズ1: 初期設定</div>
+            <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#8b5cf6;display:inline-block"></span>フェーズ2: マスタデータ</div>
+            <div class="legend-item"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block"></span>フェーズ3: 日常運用</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick links -->
+      <div style="margin-bottom:24px;">
+        <h2 style="font-size:0.8rem; font-weight:700; color:var(--color-gray-500); text-transform:uppercase; letter-spacing:.08em; margin-bottom:12px;">クイックアクセス</h2>
+        <div class="grid grid-4" style="gap:10px;">
+          <a href="A1_016.html" class="quick-link"><span class="quick-link-icon">🍜</span>メニュー管理</a>
+          <a href="A1_024.html" class="quick-link"><span class="quick-link-icon">🪑</span>テーブル管理</a>
+          <a href="A1_025.html" class="quick-link"><span class="quick-link-icon">👥</span>スタッフ管理</a>
+          <a href="A1_028.html" class="quick-link"><span class="quick-link-icon">💰</span>売上レポート</a>
+        </div>
+      </div>
+
+      <!-- 3-phase flow -->
+      <div class="grid grid-3" style="gap:20px; align-items:start;">
+
+        <!-- Phase 1 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="phase-header" style="margin:0">
+              <div class="phase-badge p1">1</div>
+              <div>
+                <div class="phase-title">フェーズ1 — 初期設定</div>
+                <div class="phase-subtitle">運用開始前に完了させる必須設定</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body" style="padding:16px; display:flex; flex-direction:column; gap:8px;">
+
+            <a href="A1_001.html" class="step-card">
+              <div class="step-number">1</div>
+              <div class="step-info">
+                <div class="step-label">🏪 店舗基本情報</div>
+                <div class="step-desc">店舗名・住所・営業時間・税率・通貨単位</div>
+                <div class="step-screens"><span class="screen-chip">A1_001</span></div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_002.html" class="step-card">
+              <div class="step-number">2</div>
+              <div class="step-info">
+                <div class="step-label">⚙️ 営業モード設定</div>
+                <div class="step-desc">注文チャンネル・AI注文・予約/ウェイトリストON/OFF</div>
+                <div class="step-screens"><span class="screen-chip">A1_002</span></div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_003.html" class="step-card">
+              <div class="step-number">3</div>
+              <div class="step-info">
+                <div class="step-label">🔧 機能別詳細設定</div>
+                <div class="step-desc">予約・ウェイトリスト・注文・会計・テイクアウト・シフト・店舗運用 (7タブ)</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_003</span>
+                  <span class="screen-chip">A1_004</span>
+                  <span class="screen-chip">A1_005</span>
+                  <span class="screen-chip">A1_006</span>
+                  <span class="screen-chip">A1_007</span>
+                  <span class="screen-chip">A1_008</span>
+                  <span class="screen-chip">A1_009</span>
+                </div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_010.html" class="step-card">
+              <div class="step-number">4</div>
+              <div class="step-info">
+                <div class="step-label">🔔 通知・LINE設定</div>
+                <div class="step-desc">LINE連携・テンプレート設定・スタッフアラート</div>
+                <div class="step-screens"><span class="screen-chip">A1_010</span></div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_011.html" class="step-card">
+              <div class="step-number">5</div>
+              <div class="step-info">
+                <div class="step-label">🤖 AI・自動化設定</div>
+                <div class="step-desc">AIプロフィール・会話シナリオ・データ連携・おすすめエンジン</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_011</span>
+                  <span class="screen-chip">A1_012</span>
+                  <span class="screen-chip">A1_013</span>
+                  <span class="screen-chip">A1_014</span>
+                </div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_015.html" class="step-card">
+              <div class="step-number">6</div>
+              <div class="step-info">
+                <div class="step-label">🖨️ デバイス連携設定</div>
+                <div class="step-desc">プリンター・KDS・発券機・ディスプレイ接続</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_015</span>
+                  <span class="screen-chip">A1_015.1</span>
+                  <span class="screen-chip">A1_015.2</span>
+                </div>
+              </div>
+            </a>
+
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="phase-header" style="margin:0">
+              <div class="phase-badge p2">2</div>
+              <div>
+                <div class="phase-title">フェーズ2 — マスタ作成</div>
+                <div class="phase-subtitle">運用に必要なデータを登録する</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body" style="padding:16px; display:flex; flex-direction:column; gap:8px;">
+
+            <a href="A1_016.html" class="step-card">
+              <div class="step-number p2">7</div>
+              <div class="step-info">
+                <div class="step-label">🍜 メニュー管理</div>
+                <div class="step-desc">単品・コース・トッピング。基本情報→カスタマイズ→レシピ→栄養→AI設定→画像 (6タブ)</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_016</span>
+                  <span class="screen-chip">A1_017</span>
+                  <span class="screen-chip">A1_018</span>
+                  <span class="screen-chip">A1_019</span>
+                  <span class="screen-chip">A1_020</span>
+                  <span class="screen-chip">A1_021</span>
+                  <span class="screen-chip">A1_022</span>
+                  <span class="screen-chip">A1_023</span>
+                </div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_024.html" class="step-card">
+              <div class="step-number p2">8</div>
+              <div class="step-info">
+                <div class="step-label">🪑 テーブル管理</div>
+                <div class="step-desc">テーブル登録・エリア・QRコード発行・予約表示設定</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_024</span>
+                  <span class="screen-chip">A1_024.1</span>
+                </div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_025.html" class="step-card">
+              <div class="step-number p2">9</div>
+              <div class="step-info">
+                <div class="step-label">👥 スタッフ管理</div>
+                <div class="step-desc">スタッフ登録・役割設定・LINE連携・権限管理</div>
+                <div class="step-screens"><span class="screen-chip">A1_025</span></div>
+              </div>
+            </a>
+            <div class="flow-arrow">↓</div>
+
+            <a href="A1_026.html" class="step-card">
+              <div class="step-number p2">10</div>
+              <div class="step-info">
+                <div class="step-label">👤 顧客管理</div>
+                <div class="step-desc">常連顧客リスト・インポート・アレルギー・VIP管理</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_026</span>
+                  <span class="screen-chip">A1_026.1</span>
+                </div>
+              </div>
+            </a>
+
+            <!-- Test checklist -->
+            <div style="margin-top:12px; background:var(--color-success-light); border-radius:var(--radius-md); padding:14px;">
+              <div style="font-size:0.78rem; font-weight:700; color:#065f46; margin-bottom:8px;">✅ 運用前テストチェック</div>
+              <div style="font-size:0.72rem; color:#065f46; display:flex; flex-direction:column; gap:5px;">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox"> 顧客→キッチン→会計フローでテスト注文</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox"> AIを呼び出して応答確認</label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox"> キッチン票・レシートの試し印刷</label>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="phase-header" style="margin:0">
+              <div class="phase-badge p3">3</div>
+              <div>
+                <div class="phase-title">フェーズ3 — 日常運用</div>
+                <div class="phase-subtitle">毎日使うレポート・精算・シフト管理</div>
+              </div>
+            </div>
+          </div>
+          <div class="card-body" style="padding:16px; display:flex; flex-direction:column; gap:8px;">
+
+            <a href="A1_027.html" class="step-card">
+              <div class="step-number p3">📅</div>
+              <div class="step-info">
+                <div class="step-label">シフト管理</div>
+                <div class="step-desc">シフトパターン・LINEでスタッフ募集・承認/却下</div>
+                <div class="step-screens"><span class="screen-chip">A1_027</span></div>
+              </div>
+            </a>
+
+            <div style="margin:4px 0; font-size:0.7rem; font-weight:700; color:var(--color-gray-500); text-transform:uppercase; letter-spacing:.06em;">レポート・分析</div>
+
+            <a href="A1_028.html" class="step-card">
+              <div class="step-number p3">📊</div>
+              <div class="step-info">
+                <div class="step-label">💰 売上レポート</div>
+                <div class="step-desc">KPI・目標達成率・リアルタイムダッシュボード・季節/曜日分析</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_028</span>
+                  <span class="screen-chip">A1_031</span>
+                </div>
+              </div>
+            </a>
+
+            <a href="A1_029.html" class="step-card">
+              <div class="step-number p3">📋</div>
+              <div class="step-info">
+                <div class="step-label">🍽️ 注文・提供レポート</div>
+                <div class="step-desc">来客数・注文数・時間内提供率・時間帯分析</div>
+                <div class="step-screens"><span class="screen-chip">A1_029</span></div>
+              </div>
+            </a>
+
+            <a href="A1_030.html" class="step-card">
+              <div class="step-number p3">👥</div>
+              <div class="step-info">
+                <div class="step-label">👤 顧客レポート</div>
+                <div class="step-desc">総顧客数・新規/リピート率・VIPランキング・年齢分析</div>
+                <div class="step-screens"><span class="screen-chip">A1_030</span></div>
+              </div>
+            </a>
+
+            <a href="A1_033.html" class="step-card">
+              <div class="step-number p3">🤖</div>
+              <div class="step-info">
+                <div class="step-label">🤖 AIエンジンレポート</div>
+                <div class="step-desc">音声注文利用率・おすすめ採用率・AI売上貢献</div>
+                <div class="step-screens"><span class="screen-chip">A1_033</span></div>
+              </div>
+            </a>
+
+            <div style="margin:4px 0; font-size:0.7rem; font-weight:700; color:var(--color-gray-500); text-transform:uppercase; letter-spacing:.06em;">請求・決済</div>
+
+            <a href="A1_034.html" class="step-card">
+              <div class="step-number p3">💳</div>
+              <div class="step-info">
+                <div class="step-label">決済取引履歴</div>
+                <div class="step-desc">全トランザクション・フィルタ・返金処理</div>
+                <div class="step-screens"><span class="screen-chip">A1_034</span></div>
+              </div>
+            </a>
+
+            <a href="A1_036.html" class="step-card">
+              <div class="step-number p3">📒</div>
+              <div class="step-info">
+                <div class="step-label">日次精算レポート</div>
+                <div class="step-desc">POS売上・実数照合・差額・精算コメント</div>
+                <div class="step-screens">
+                  <span class="screen-chip">A1_035</span>
+                  <span class="screen-chip">A1_036</span>
+                  <span class="screen-chip">A1_037</span>
+                </div>
+              </div>
+            </a>
+
+          </div>
+        </div>
+
+      </div><!-- /grid-3 -->
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-wrapper -->
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: '' });
+</script>
+</body>
+</html>

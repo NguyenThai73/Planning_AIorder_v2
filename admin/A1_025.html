@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スタッフ管理 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Stats row ── */
+    .stats-row { display:flex; gap:0; border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; }
+    .stat-item { flex:1; padding:12px 16px; text-align:center; border-right:1px solid var(--color-gray-200); }
+    .stat-item:last-child { border-right:none; }
+    .stat-val { font-size:1.3rem; font-weight:800; color:var(--color-gray-900); line-height:1; }
+    .stat-lbl { font-size:0.7rem; color:var(--color-gray-500); margin-top:3px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-bar .search-wrap { position:relative; flex:1; min-width:180px; }
+    .filter-bar .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--color-gray-400); }
+    .filter-bar .search-wrap input { padding-left:34px; }
+
+    /* ── Staff table ── */
+    .staff-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .staff-table th { padding:10px 12px; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-gray-500); border-bottom:2px solid var(--color-gray-200); background:var(--color-gray-50); white-space:nowrap; }
+    .staff-table td { padding:12px; border-bottom:1px solid var(--color-gray-100); vertical-align:middle; color:var(--color-gray-700); }
+    .staff-table tbody tr:hover { background:var(--color-gray-50); }
+    .staff-table tbody tr:last-child td { border-bottom:none; }
+
+    /* ── Avatar ── */
+    .avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.82rem; font-weight:700; flex-shrink:0; }
+
+    /* ── Staff name cell ── */
+    .staff-name { font-weight:700; color:var(--color-gray-900); }
+    .staff-id   { font-size:0.7rem; color:var(--color-gray-400); font-family:monospace; }
+
+    /* ── LINE status ── */
+    .line-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:var(--radius-full); font-size:0.72rem; font-weight:700; }
+    .line-badge.linked   { background:#dcfce7; color:#166534; }
+    .line-badge.unlinked { background:var(--color-gray-100); color:var(--color-gray-500); }
+
+    /* ── Permission tag ── */
+    .perm-tag { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:var(--radius-full); font-size:0.7rem; font-weight:600; background:var(--color-primary-light); color:var(--color-primary); }
+
+    /* ── Slide panel ── */
+    .panel-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:150; }
+    .panel-overlay.active { display:block; }
+    .slide-panel { position:fixed; top:0; right:-480px; width:460px; height:100vh; background:#fff; z-index:160; box-shadow:-8px 0 40px rgba(0,0,0,.12); transition:right .3s ease; display:flex; flex-direction:column; }
+    .slide-panel.open { right:0; }
+    .panel-header { padding:18px 20px; border-bottom:1px solid var(--color-gray-200); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .panel-header h2 { font-size:0.95rem; font-weight:700; color:var(--color-gray-900); }
+    .panel-close { width:32px; height:32px; border-radius:var(--radius-md); border:none; background:var(--color-gray-100); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-gray-600); font-size:18px; transition:background var(--transition); }
+    .panel-close:hover { background:var(--color-gray-200); }
+    .panel-body  { flex:1; overflow-y:auto; padding:20px; }
+    .panel-footer { padding:14px 20px; border-top:1px solid var(--color-gray-200); display:flex; gap:10px; flex-shrink:0; }
+
+    /* ── Permission matrix ── */
+    .perm-matrix { width:100%; border-collapse:collapse; font-size:0.78rem; margin-top:6px; }
+    .perm-matrix th { padding:7px 10px; text-align:left; font-size:0.68rem; font-weight:700; color:var(--color-gray-500); border-bottom:1px solid var(--color-gray-200); background:var(--color-gray-50); }
+    .perm-matrix td { padding:7px 10px; border-bottom:1px solid var(--color-gray-100); color:var(--color-gray-700); }
+    .perm-matrix input[type=checkbox] { accent-color:var(--color-primary); }
+
+    /* ── Confirm overlay ── */
+    .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:220; align-items:center; justify-content:center; }
+    .confirm-overlay.active { display:flex; }
+    .confirm-box { background:#fff; border-radius:var(--radius-xl); padding:28px 32px; max-width:380px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .confirm-box h3 { font-size:1rem; font-weight:700; margin-bottom:8px; }
+    .confirm-box p  { font-size:0.83rem; color:var(--color-gray-500); margin-bottom:20px; }
+    .confirm-box .actions { display:flex; gap:10px; justify-content:center; }
+
+    /* ── LINE invite modal ── */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.active { display:flex; }
+    .modal-box { background:#fff; border-radius:var(--radius-xl); padding:28px 32px; max-width:360px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+
+    /* ── Page header row ── */
+    .page-header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+
+    /* ── Bulk bar ── */
+    .bulk-bar { display:none; align-items:center; gap:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-md); padding:9px 14px; margin-bottom:12px; font-size:0.82rem; }
+    .bulk-bar.active { display:flex; }
+
+    /* ── Pagination ── */
+    .page-btn { width:32px; height:32px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600; border:1px solid var(--color-gray-200); background:var(--color-white); cursor:pointer; color:var(--color-gray-600); transition:background var(--transition); }
+    .page-btn:hover  { background:var(--color-gray-100); }
+    .page-btn.active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+    .page-btn:disabled { opacity:.4; cursor:default; }
+
+    /* ── Section head inside panel ── */
+    .sec-head { font-size:0.82rem; font-weight:700; color:var(--color-gray-700); padding-bottom:8px; border-bottom:1px solid var(--color-gray-100); margin-bottom:12px; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <div class="page-content">
+
+      <!-- Page header -->
+      <div class="page-header-row">
+        <div>
+          <nav class="breadcrumb">
+            <a href="index.html">ホーム</a>
+            <span class="breadcrumb-sep">›</span>
+            <span>マスタ管理</span>
+            <span class="breadcrumb-sep">›</span>
+            <span>スタッフ管理</span>
+          </nav>
+          <h1 class="page-title" style="margin-top:8px">👥 スタッフ管理</h1>
+          <p class="page-subtitle">スタッフの登録・役割・権限・LINE連携を管理します。</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;margin-top:6px">
+          <button class="btn btn-outline" onclick="openLineInvite()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 13.5 19.79 19.79 0 0 1 1.08 4.86 2 2 0 0 1 3.05 2.68h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.13 6.13l.38-.38a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 18v.92z"/></svg>
+            LINE招待を送る
+          </button>
+          <button class="btn btn-danger" onclick="openPanel()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            スタッフ新規登録
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-val">18</div>
+          <div class="stat-lbl">総スタッフ数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-primary)">5</div>
+          <div class="stat-lbl">社員</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-warning)">13</div>
+          <div class="stat-lbl">アルバイト</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:#16a34a">14</div>
+          <div class="stat-lbl">LINE連携済み</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-danger)">2</div>
+          <div class="stat-lbl">承認待ち</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-gray-400)">1</div>
+          <div class="stat-lbl">無効</div>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" class="form-control" placeholder="氏名・ID・電話番号で検索">
+        </div>
+        <select class="form-control" style="min-width:110px">
+          <option>全ての区分</option>
+          <option>社員</option>
+          <option>アルバイト</option>
+          <option>業務委託</option>
+        </select>
+        <select class="form-control" style="min-width:120px">
+          <option>全ての役割</option>
+          <option>店長</option>
+          <option>ホール</option>
+          <option>キッチン</option>
+          <option>カウンター</option>
+          <option>デリバリー</option>
+        </select>
+        <select class="form-control" style="min-width:120px">
+          <option>全てのステータス</option>
+          <option>有効</option>
+          <option>承認待ち</option>
+          <option>承認済み</option>
+          <option>無効</option>
+        </select>
+        <select class="form-control" style="min-width:120px">
+          <option>LINE連携</option>
+          <option>連携済み</option>
+          <option>未連携</option>
+        </select>
+        <button class="btn btn-sm btn-secondary" onclick="showToast('CSVをエクスポートしました')">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          CSV出力
+        </button>
+      </div>
+
+      <!-- Bulk bar -->
+      <div class="bulk-bar" id="bulk-bar">
+        <span id="bulk-count" style="font-weight:700;color:var(--color-primary)">0件</span> 選択中
+        <button class="btn btn-sm btn-secondary" onclick="showToast('LINE招待を送信しました')">LINE招待を送る</button>
+        <button class="btn btn-sm btn-secondary" onclick="showToast('ステータスを有効に変更しました')">有効にする</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626" onclick="showToast('選択したスタッフを無効化しました')">無効化</button>
+        <button class="btn btn-sm btn-ghost" onclick="clearSelection()" style="margin-left:auto">選択解除</button>
+      </div>
+
+      <!-- Staff table -->
+      <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+        <table class="staff-table" id="staff-table">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="check-all" onchange="selectAll(this)"></th>
+              <th style="width:48px">アバター</th>
+              <th>スタッフ</th>
+              <th style="width:80px">区分</th>
+              <th style="width:90px">役割</th>
+              <th style="width:120px">権限レベル</th>
+              <th style="width:120px">LINE連携</th>
+              <th style="width:90px">ステータス</th>
+              <th style="width:90px">操作</th>
+            </tr>
+          </thead>
+          <tbody id="staff-tbody">
+
+            <!-- 店長 -->
+            <tr>
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:#dbeafe;color:#1e40af">山</div>
+              </td>
+              <td>
+                <div class="staff-name">山田 太郎</div>
+                <div class="staff-id">#S001 · 090-1234-5678</div>
+              </td>
+              <td><span class="badge badge-blue">社員</span></td>
+              <td>
+                <span class="badge" style="background:#fef3c7;color:#92400e">
+                  👑 店長
+                </span>
+              </td>
+              <td>
+                <span class="perm-tag">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  管理者
+                </span>
+              </td>
+              <td>
+                <span class="line-badge linked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  連携済み
+                </span>
+              </td>
+              <td><span class="badge badge-green">有効</span></td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('S001')">編集</button>
+                  <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('山田 太郎')">削除</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 副店長 -->
+            <tr>
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:#d1fae5;color:#065f46">田</div>
+              </td>
+              <td>
+                <div class="staff-name">田中 美咲</div>
+                <div class="staff-id">#S002 · 090-2345-6789</div>
+              </td>
+              <td><span class="badge badge-blue">社員</span></td>
+              <td>
+                <span class="badge" style="background:#dbeafe;color:#1e40af">
+                  🏪 副店長
+                </span>
+              </td>
+              <td>
+                <span class="perm-tag">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  管理者
+                </span>
+              </td>
+              <td>
+                <span class="line-badge linked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  連携済み
+                </span>
+              </td>
+              <td><span class="badge badge-green">有効</span></td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('S002')">編集</button>
+                  <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('田中 美咲')">削除</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- ホールスタッフ 承認待ち -->
+            <tr style="background:#fffbeb">
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:#fef3c7;color:#92400e">佐</div>
+              </td>
+              <td>
+                <div class="staff-name">佐藤 花子</div>
+                <div class="staff-id">#S010 · 080-3456-7890</div>
+              </td>
+              <td><span class="badge badge-yellow">アルバイト</span></td>
+              <td>
+                <span class="badge badge-gray">🛎️ ホール</span>
+              </td>
+              <td>
+                <span class="perm-tag" style="background:#fef3c7;color:#92400e">
+                  スタッフ
+                </span>
+              </td>
+              <td>
+                <span class="line-badge unlinked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  未連携
+                </span>
+              </td>
+              <td>
+                <span class="badge" style="background:#fef3c7;color:#92400e">承認待ち</span>
+              </td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-primary" style="padding:5px 9px" onclick="showToast('佐藤 花子を承認しました')">承認</button>
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('S010')">編集</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- キッチン 連携済み -->
+            <tr>
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:#fce7f3;color:#9d174d">鈴</div>
+              </td>
+              <td>
+                <div class="staff-name">鈴木 一郎</div>
+                <div class="staff-id">#S011 · 070-4567-8901</div>
+              </td>
+              <td><span class="badge badge-yellow">アルバイト</span></td>
+              <td>
+                <span class="badge" style="background:#ffedd5;color:#9a3412">🍳 キッチン</span>
+              </td>
+              <td>
+                <span class="perm-tag" style="background:#fef3c7;color:#92400e">
+                  スタッフ
+                </span>
+              </td>
+              <td>
+                <span class="line-badge linked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  連携済み
+                </span>
+              </td>
+              <td><span class="badge badge-green">承認済み</span></td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('S011')">編集</button>
+                  <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('鈴木 一郎')">削除</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- ホール 連携済み -->
+            <tr>
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:#ede9fe;color:#5b21b6">高</div>
+              </td>
+              <td>
+                <div class="staff-name">高橋 あかり</div>
+                <div class="staff-id">#S012 · 090-5678-9012</div>
+              </td>
+              <td><span class="badge badge-yellow">アルバイト</span></td>
+              <td>
+                <span class="badge badge-gray">🛎️ ホール</span>
+              </td>
+              <td>
+                <span class="perm-tag" style="background:#fef3c7;color:#92400e">スタッフ</span>
+              </td>
+              <td>
+                <span class="line-badge linked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  連携済み
+                </span>
+              </td>
+              <td><span class="badge badge-green">有効</span></td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('S012')">編集</button>
+                  <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('高橋 あかり')">削除</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 社員 キッチンリーダー -->
+            <tr>
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:#cffafe;color:#0e7490">中</div>
+              </td>
+              <td>
+                <div class="staff-name">中村 健太</div>
+                <div class="staff-id">#S003 · 090-6789-0123</div>
+              </td>
+              <td><span class="badge badge-blue">社員</span></td>
+              <td>
+                <span class="badge" style="background:#ffedd5;color:#9a3412">🍳 キッチンL</span>
+              </td>
+              <td>
+                <span class="perm-tag" style="background:#d1fae5;color:#065f46">
+                  <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  マネージャー
+                </span>
+              </td>
+              <td>
+                <span class="line-badge linked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  連携済み
+                </span>
+              </td>
+              <td><span class="badge badge-green">有効</span></td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('S003')">編集</button>
+                  <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('中村 健太')">削除</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- アルバイト 無効 -->
+            <tr style="opacity:0.6">
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:var(--color-gray-200);color:var(--color-gray-500)">伊</div>
+              </td>
+              <td>
+                <div class="staff-name" style="color:var(--color-gray-500)">伊藤 大輝</div>
+                <div class="staff-id">#S015 · 080-7890-1234</div>
+              </td>
+              <td><span class="badge badge-yellow">アルバイト</span></td>
+              <td>
+                <span class="badge badge-gray">🛎️ ホール</span>
+              </td>
+              <td>
+                <span class="perm-tag" style="background:var(--color-gray-100);color:var(--color-gray-500)">スタッフ</span>
+              </td>
+              <td>
+                <span class="line-badge linked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                  連携済み
+                </span>
+              </td>
+              <td><span class="badge badge-gray">無効</span></td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="showToast('伊藤 大輝を有効化しました')">有効化</button>
+                  <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('伊藤 大輝')">削除</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 承認待ち 2件目 -->
+            <tr style="background:#fffbeb">
+              <td><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td>
+                <div class="avatar" style="background:#fef3c7;color:#92400e">小</div>
+              </td>
+              <td>
+                <div class="staff-name">小林 さくら</div>
+                <div class="staff-id">#S018 · 090-8901-2345</div>
+              </td>
+              <td><span class="badge badge-yellow">アルバイト</span></td>
+              <td>
+                <span class="badge badge-gray">🍳 キッチン</span>
+              </td>
+              <td>
+                <span class="perm-tag" style="background:#fef3c7;color:#92400e">スタッフ</span>
+              </td>
+              <td>
+                <span class="line-badge unlinked">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  未連携
+                </span>
+              </td>
+              <td>
+                <span class="badge" style="background:#fef3c7;color:#92400e">承認待ち</span>
+              </td>
+              <td>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-sm btn-primary" style="padding:5px 9px" onclick="showToast('小林 さくらを承認しました')">承認</button>
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('S018')">編集</button>
+                </div>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;flex-wrap:wrap;gap:10px">
+        <span style="font-size:0.8rem;color:var(--color-gray-500)">8件表示 / 全18件</span>
+        <div style="display:flex;gap:4px">
+          <button class="page-btn" disabled>‹</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">›</button>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+
+<!-- ══════════ SLIDE PANEL — スタッフ登録・編集 ══════════ -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+<div class="slide-panel" id="slide-panel">
+  <div class="panel-header">
+    <h2 id="panel-title">スタッフを登録</h2>
+    <button class="panel-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="panel-body">
+
+    <!-- 基本情報 -->
+    <div class="sec-head">基本情報</div>
+
+    <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">姓 <span class="required">*</span></label>
+        <input type="text" class="form-control" placeholder="山田" id="p-last">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">名 <span class="required">*</span></label>
+        <input type="text" class="form-control" placeholder="太郎" id="p-first">
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">電話番号</label>
+        <input type="tel" class="form-control" placeholder="090-XXXX-XXXX" id="p-tel">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">メールアドレス</label>
+        <input type="email" class="form-control" placeholder="example@email.com" id="p-email">
+      </div>
+    </div>
+
+    <!-- 雇用情報 -->
+    <div class="sec-head" style="margin-top:18px">雇用情報</div>
+
+    <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">区分 <span class="required">*</span></label>
+        <select class="form-control" id="p-emp-type">
+          <option>社員</option>
+          <option selected>アルバイト</option>
+          <option>業務委託</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">役割 <span class="required">*</span></label>
+        <select class="form-control" id="p-role">
+          <option>店長</option>
+          <option>副店長</option>
+          <option selected>ホール</option>
+          <option>キッチン</option>
+          <option>キッチンリーダー</option>
+          <option>カウンター</option>
+          <option>デリバリー</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">権限レベル</label>
+      <select class="form-control" id="p-perm">
+        <option>管理者（全機能へのアクセス）</option>
+        <option>マネージャー（レポート・スタッフ管理）</option>
+        <option selected>スタッフ（注文・KDS・シフト）</option>
+        <option>限定（注文のみ）</option>
+      </select>
+    </div>
+
+    <!-- 権限マトリクス -->
+    <div style="background:var(--color-gray-50);border:1px solid var(--color-gray-200);border-radius:var(--radius-md);padding:12px;margin-bottom:18px">
+      <div style="font-size:0.75rem;font-weight:700;color:var(--color-gray-600);margin-bottom:8px">権限の詳細設定</div>
+      <table class="perm-matrix">
+        <thead>
+          <tr>
+            <th>機能</th>
+            <th style="text-align:center;width:50px">閲覧</th>
+            <th style="text-align:center;width:50px">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>注文管理・KDS</td><td style="text-align:center"><input type="checkbox" checked></td><td style="text-align:center"><input type="checkbox" checked></td></tr>
+          <tr><td>テーブル管理</td><td style="text-align:center"><input type="checkbox" checked></td><td style="text-align:center"><input type="checkbox"></td></tr>
+          <tr><td>メニュー管理</td><td style="text-align:center"><input type="checkbox"></td><td style="text-align:center"><input type="checkbox"></td></tr>
+          <tr><td>予約・ウェイトリスト</td><td style="text-align:center"><input type="checkbox" checked></td><td style="text-align:center"><input type="checkbox" checked></td></tr>
+          <tr><td>売上レポート</td><td style="text-align:center"><input type="checkbox"></td><td style="text-align:center"><input type="checkbox"></td></tr>
+          <tr><td>シフト管理</td><td style="text-align:center"><input type="checkbox" checked></td><td style="text-align:center"><input type="checkbox"></td></tr>
+          <tr><td>スタッフ管理</td><td style="text-align:center"><input type="checkbox"></td><td style="text-align:center"><input type="checkbox"></td></tr>
+          <tr><td>店舗設定</td><td style="text-align:center"><input type="checkbox"></td><td style="text-align:center"><input type="checkbox"></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- LINE連携 -->
+    <div class="sec-head">LINE連携</div>
+
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-md);padding:14px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:0.83rem;font-weight:700;color:#166534">LINE連携状態</div>
+        <span class="line-badge unlinked">未連携</span>
+      </div>
+      <p style="font-size:0.77rem;color:#374151;margin-bottom:10px">LINEを連携するとシフト通知・スタッフ呼び出し・チャットが利用できます。</p>
+      <button class="btn btn-sm" style="background:#06c755;color:#fff;font-weight:700" onclick="showToast('LINE招待リンクを送信しました')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+        LINE招待を送る
+      </button>
+    </div>
+
+    <!-- 備考 -->
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label">備考</label>
+      <textarea class="form-control" rows="2" placeholder="特記事項があれば入力"></textarea>
+    </div>
+
+  </div>
+  <div class="panel-footer">
+    <button class="btn btn-secondary" style="flex:1" onclick="closePanel()">キャンセル</button>
+    <button class="btn btn-primary" style="flex:2" onclick="saveStaff()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      保存する
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════ LINE INVITE MODAL ══════════ -->
+<div class="modal-overlay" id="line-modal" onclick="closeLineModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div style="width:56px;height:56px;background:#06c755;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+    </div>
+    <h3>LINE招待を送る</h3>
+    <p style="margin-bottom:16px">選択したスタッフにLINE公式アカウントの友達追加リンクを送信します。連携後、シフト通知・スタッフ呼び出しが有効になります。</p>
+    <div style="background:var(--color-gray-50);border-radius:var(--radius-md);padding:12px;margin-bottom:16px;text-align:left">
+      <div style="font-size:0.75rem;font-weight:700;color:var(--color-gray-600);margin-bottom:6px">送信先スタッフ（未連携）</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem">
+          <div class="avatar" style="background:#fef3c7;color:#92400e;width:28px;height:28px;font-size:0.72rem">佐</div>
+          佐藤 花子 <span style="color:var(--color-gray-400);font-size:0.72rem">080-3456-7890</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem">
+          <div class="avatar" style="background:#fef3c7;color:#92400e;width:28px;height:28px;font-size:0.72rem">小</div>
+          小林 さくら <span style="color:var(--color-gray-400);font-size:0.72rem">090-8901-2345</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeLineModal()">キャンセル</button>
+      <button class="btn" style="flex:2;background:#06c755;color:#fff;font-weight:700" onclick="sendLineInvite()">招待を送信</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ DELETE CONFIRM ══════════ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div style="width:48px;height:48px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <svg width="22" height="22" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+    </div>
+    <h3>スタッフを削除しますか？</h3>
+    <p id="confirm-name" style="font-weight:700;color:var(--color-gray-800);margin-bottom:6px"></p>
+    <p>削除するとシフトデータ・権限設定も全て削除されます。</p>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">キャンセル</button>
+      <button class="btn" style="background:#dc2626;color:#fff" onclick="executeDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">保存しました</span>
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'staff' });
+
+  /* ── Select all ── */
+  function selectAll(master) {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = master.checked);
+    updateBulk();
+  }
+  function updateBulk() {
+    const n = document.querySelectorAll('.row-check:checked').length;
+    document.getElementById('bulk-bar').classList.toggle('active', n > 0);
+    document.getElementById('bulk-count').textContent = n + '件';
+  }
+  function clearSelection() {
+    document.querySelectorAll('.row-check, #check-all').forEach(c => c.checked = false);
+    updateBulk();
+  }
+
+  /* ── Slide panel ── */
+  function openPanel(id) {
+    document.getElementById('panel-title').textContent = id ? 'スタッフを編集' : 'スタッフを登録';
+    document.getElementById('panel-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePanel() {
+    document.getElementById('panel-overlay').classList.remove('active');
+    document.getElementById('slide-panel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function saveStaff() {
+    closePanel();
+    showToast('スタッフ情報を保存しました');
+  }
+
+  /* ── LINE invite modal ── */
+  function openLineInvite() {
+    document.getElementById('line-modal').classList.add('active');
+  }
+  function closeLineModal() {
+    document.getElementById('line-modal').classList.remove('active');
+  }
+  function sendLineInvite() {
+    closeLineModal();
+    showToast('LINE招待を2件送信しました');
+  }
+
+  /* ── Delete confirm ── */
+  let _deleteTarget = null;
+  function confirmDelete(name) {
+    _deleteTarget = name;
+    document.getElementById('confirm-name').textContent = '「' + name + '」';
+    document.getElementById('confirm-overlay').classList.add('active');
+  }
+  function closeConfirm() {
+    document.getElementById('confirm-overlay').classList.remove('active');
+    _deleteTarget = null;
+  }
+  function executeDelete() {
+    closeConfirm();
+    showToast('「' + _deleteTarget + '」を削除しました');
+  }
+  document.getElementById('confirm-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeConfirm();
+  });
+
+  /* ── Toast ── */
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.style.display = 'flex';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+</script>
+</body>
+</html>

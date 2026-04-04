@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業モード設定 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    .section-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-xl);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .section-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-gray-100);
+      background: var(--color-gray-50);
+    }
+    .section-card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--color-gray-900);
+    }
+    .section-card-body { padding: 20px; }
+
+    /* ── Toggle row ── */
+    .toggle-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--color-gray-100);
+    }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-row:first-child { padding-top: 0; }
+    .toggle-row-info { flex: 1; min-width: 0; }
+    .toggle-row-label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--color-gray-800);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toggle-row-desc {
+      font-size: 0.78rem;
+      color: var(--color-gray-500);
+      margin-top: 3px;
+      line-height: 1.5;
+    }
+
+    /* Sub-setting row (indented) */
+    .sub-setting {
+      margin-top: 12px;
+      background: var(--color-gray-50);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sub-setting-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--color-gray-700);
+      flex: 1;
+    }
+    .sub-setting-desc {
+      font-size: 0.72rem;
+      color: var(--color-gray-500);
+    }
+
+    /* AI channel card */
+    .ai-card {
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: var(--color-white);
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .ai-card:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); }
+    .ai-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .ai-card-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-lg);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .ai-card-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--color-gray-900);
+    }
+    .ai-card-subtitle {
+      font-size: 0.75rem;
+      color: var(--color-gray-500);
+      margin-top: 2px;
+    }
+    .ai-card-body {
+      font-size: 0.78rem;
+      color: var(--color-gray-600);
+      line-height: 1.6;
+      border-top: 1px solid var(--color-gray-100);
+      padding-top: 12px;
+    }
+    .ai-card-body li { padding: 2px 0; }
+
+    /* Important notice */
+    .notice-box {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-left: 4px solid #f59e0b;
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      font-size: 0.8rem;
+      color: #92400e;
+    }
+    .notice-box strong { font-weight: 700; }
+    .notice-box ul { margin-top: 6px; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; list-style: disc; }
+
+    /* Step sticky bar */
+    .sticky-bar {
+      position: sticky;
+      top: var(--header-height);
+      z-index: 30;
+      background: var(--color-white);
+      border-bottom: 1px solid var(--color-gray-200);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .sticky-bar-left { display: flex; align-items: center; gap: 12px; }
+    .sticky-bar-right { display: flex; align-items: center; gap: 8px; }
+    .step-indicator { display: flex; gap: 6px; align-items: center; }
+    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-gray-200); }
+    .step-dot.active { background: var(--color-primary); width: 20px; border-radius: 4px; }
+    .step-dot.done { background: var(--color-success); }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky action bar -->
+    <div class="sticky-bar">
+      <div class="sticky-bar-left">
+        <nav class="breadcrumb" style="margin:0">
+          <a href="index.html">ホーム</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>店舗設定</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>営業モード設定</span>
+        </nav>
+        <div class="step-indicator">
+          <div class="step-dot done"></div>
+          <div class="step-dot active"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+        </div>
+        <span style="font-size:0.72rem; color:var(--color-gray-500)">Step 2 / 6</span>
+      </div>
+      <div class="sticky-bar-right">
+        <button class="btn btn-secondary" onclick="window.history.back()">キャンセル</button>
+        <button class="btn btn-primary" onclick="handleSave()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          設定を保存
+        </button>
+        <a href="A1_003.html" class="btn btn-outline">
+          次のステップ
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div style="margin-bottom:24px;">
+        <h1 class="page-title">⚙️ 営業モード設定</h1>
+        <p class="page-subtitle">顧客の注文方法・予約受付・AI注文支援チャンネルを設定します。これは最も重要なステップです。</p>
+      </div>
+
+      <!-- Important notice -->
+      <div class="notice-box" style="margin-bottom:24px;">
+        <strong>💡 運用前に確認が必要な決定事項</strong>
+        <ul>
+          <li><strong>WEBオーダー</strong>（LINE/Web）か <strong>APPオーダー</strong>（テーブルタブレット）、またはその両方？</li>
+          <li><strong>予約（Booking）</strong>を有効にするか？ → 詳細設定は Step 3 へ</li>
+          <li><strong>ウェイトリスト（順番待ち）</strong>を有効にするか？ → 詳細設定は Step 3 へ</li>
+        </ul>
+      </div>
+
+      <!-- ① 注文チャンネル -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">📲</span>
+          <span class="section-card-title">注文受付チャンネルの有効化</span>
+          <span class="badge badge-blue" style="margin-left:auto">Order Channel</span>
+        </div>
+        <div class="section-card-body">
+
+          <!-- テーブルタブレット -->
+          <div class="toggle-row">
+            <div class="toggle-row-info">
+              <div class="toggle-row-label">
+                <span style="font-size:16px">📱</span>
+                テーブルタブレット注文
+              </div>
+              <div class="toggle-row-desc">テーブルに設置された画面（タブレット/キオスク）から顧客が直接注文できます。</div>
+            </div>
+            <label class="toggle" id="toggle-tablet">
+              <input type="checkbox" checked onchange="updateChannelStatus()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- LINE / Web オーダー -->
+          <div class="toggle-row">
+            <div class="toggle-row-info">
+              <div class="toggle-row-label">
+                <span style="font-size:16px">🌐</span>
+                LINE / Webオーダー
+              </div>
+              <div class="toggle-row-desc">LINE Mini AppまたはWebサイトのQRコード読み取りから注文。顧客のスマートフォンで操作します。</div>
+              <div style="margin-top:10px; display:flex; gap:8px;">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;cursor:pointer;color:var(--color-gray-700)">
+                  <input type="checkbox" checked style="accent-color:var(--color-primary)"> LINE Mini App
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.78rem;cursor:pointer;color:var(--color-gray-700)">
+                  <input type="checkbox" checked style="accent-color:var(--color-primary)"> Webブラウザ (QR)
+                </label>
+              </div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked onchange="updateChannelStatus()">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <!-- ラストオーダー -->
+          <div class="toggle-row">
+            <div class="toggle-row-info">
+              <div class="toggle-row-label">
+                <span style="font-size:16px">⏰</span>
+                ラストオーダー自動設定
+              </div>
+              <div class="toggle-row-desc">営業終了前に自動でラストオーダー受付を終了します。指定時刻に注文チャンネルをロックします。</div>
+
+              <!-- Sub-setting: ラストオーダー時刻 -->
+              <div class="sub-setting" id="lo-sub" style="">
+                <div>
+                  <div class="sub-setting-label">ラストオーダー締め切り時刻</div>
+                  <div class="sub-setting-desc">営業終了の何分前に受付を締め切るか設定します</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <select class="form-control" style="width:auto">
+                    <option>月曜〜金曜</option>
+                    <option>土曜・日曜</option>
+                    <option selected>毎日</option>
+                  </select>
+                  <input type="time" class="form-control" value="21:45" style="width:120px">
+                  <span style="font-size:0.78rem;color:var(--color-gray-500);white-space:nowrap">（営業終了 15分前）</span>
+                </div>
+              </div>
+            </div>
+            <label class="toggle" id="toggle-lo">
+              <input type="checkbox" checked onchange="toggleLastOrder(this)">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ② 予約・ウェイトリスト -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">📅</span>
+          <span class="section-card-title">予約・ウェイトリスト受付</span>
+          <span class="badge badge-yellow" style="margin-left:auto">詳細設定は Step 3</span>
+        </div>
+        <div class="section-card-body">
+
+          <div class="toggle-row">
+            <div class="toggle-row-info">
+              <div class="toggle-row-label">
+                <span style="font-size:16px">📖</span>
+                オンライン予約受付
+              </div>
+              <div class="toggle-row-desc">LINE / Webから事前予約を受け付けます。予約の確認方法・支払い・キャンセルポリシーは Step 3 で設定します。</div>
+              <div id="booking-link" style="margin-top:8px">
+                <a href="A1_003.html" class="btn btn-sm btn-secondary">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  予約詳細設定へ (Step 3 - Tab 1)
+                </a>
+              </div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-row-info">
+              <div class="toggle-row-label">
+                <span style="font-size:16px">🎫</span>
+                ウェイトリスト（順番待ち受付）
+              </div>
+              <div class="toggle-row-desc">満席時に順番待ちを受け付けます。LINE通知で呼び出し・自動キャンセルを設定します。詳細は Step 3 で設定します。</div>
+              <div id="waitlist-link" style="margin-top:8px">
+                <a href="A1_003.html" class="btn btn-sm btn-secondary">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  ウェイトリスト詳細設定へ (Step 3 - Tab 2)
+                </a>
+              </div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" checked>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div class="toggle-row-info">
+              <div class="toggle-row-label">
+                <span style="font-size:16px">🥡</span>
+                テイクアウト注文受付
+              </div>
+              <div class="toggle-row-desc">店外・事前注文のテイクアウトを受け付けます。受付時間・支払い方法は Step 3 で設定します。</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox">
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ③ AI注文受付設定 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🤖</span>
+          <span class="section-card-title">AI注文受付設定（音声・文字）</span>
+          <span class="badge badge-cyan" style="margin-left:auto">AI Order</span>
+        </div>
+        <div class="section-card-body">
+
+          <div class="grid grid-2" style="gap:16px; margin-bottom:16px;">
+
+            <!-- Voice Order -->
+            <div class="ai-card">
+              <div class="ai-card-header">
+                <div style="display:flex;align-items:center;gap:12px;flex:1">
+                  <div class="ai-card-icon" style="background:#ede9fe">🎤</div>
+                  <div>
+                    <div class="ai-card-title">Voice Order</div>
+                    <div class="ai-card-subtitle">音声注文支援</div>
+                  </div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <div class="ai-card-body">
+                <ul style="padding-left:16px; list-style:disc;">
+                  <li>AIが音声で注文・メニュー案内を受け付ける</li>
+                  <li>多言語対応（日本語 / 英語 / 中国語）</li>
+                  <li>テーブルタブレットのマイクを使用</li>
+                  <li>注文内容を音声で読み上げて確認</li>
+                </ul>
+              </div>
+              <div>
+                <label class="form-label" style="font-size:0.75rem">AI音声キャラクター</label>
+                <select class="form-control" style="font-size:0.78rem">
+                  <option selected>さくら (女性・丁寧)</option>
+                  <option>ひろし (男性・カジュアル)</option>
+                  <option>ニュートラル</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Text Order -->
+            <div class="ai-card">
+              <div class="ai-card-header">
+                <div style="display:flex;align-items:center;gap:12px;flex:1">
+                  <div class="ai-card-icon" style="background:#dbeafe">💬</div>
+                  <div>
+                    <div class="ai-card-title">Text Order</div>
+                    <div class="ai-card-subtitle">文字注文支援</div>
+                  </div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+              <div class="ai-card-body">
+                <ul style="padding-left:16px; list-style:disc;">
+                  <li>AIがチャットテキストで注文を受け付ける</li>
+                  <li>LINE / Web画面のチャットインターフェース</li>
+                  <li>アレルギー・好みを考慮したおすすめ提案</li>
+                  <li>自然言語で「辛くないもの」など対応</li>
+                </ul>
+              </div>
+              <div>
+                <label class="form-label" style="font-size:0.75rem">対応言語</label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <label style="display:flex;align-items:center;gap:5px;font-size:0.78rem;cursor:pointer">
+                    <input type="checkbox" checked style="accent-color:var(--color-primary)"> 日本語
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:0.78rem;cursor:pointer">
+                    <input type="checkbox" checked style="accent-color:var(--color-primary)"> English
+                  </label>
+                  <label style="display:flex;align-items:center;gap:5px;font-size:0.78rem;cursor:pointer">
+                    <input type="checkbox" style="accent-color:var(--color-primary)"> 中文
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- AI detail link -->
+          <div style="background:var(--color-primary-light); border-radius:var(--radius-md); padding:12px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="font-size:0.8rem; color:var(--color-primary-dark);">
+              <strong>AIプロフィール・会話シナリオ・おすすめエンジンの詳細設定</strong>
+              <span style="color:var(--color-gray-500)"> は Step 5 で行います</span>
+            </div>
+            <a href="A1_011.html" class="btn btn-sm btn-primary">AI設定へ</a>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ④ チャンネルステータス summary -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">📊</span>
+          <span class="section-card-title">有効化チャンネル — 設定サマリー</span>
+        </div>
+        <div class="section-card-body">
+          <div class="grid grid-3" style="gap:12px;" id="channel-summary">
+            <div class="stat-card" style="padding:14px 16px; gap:10px;">
+              <div class="stat-icon blue" style="width:36px;height:36px;border-radius:8px;font-size:16px">📱</div>
+              <div class="stat-info">
+                <div class="stat-label">テーブルタブレット</div>
+                <div style="margin-top:4px"><span class="badge badge-green">● 有効</span></div>
+              </div>
+            </div>
+            <div class="stat-card" style="padding:14px 16px; gap:10px;">
+              <div class="stat-icon blue" style="width:36px;height:36px;border-radius:8px;font-size:16px">🌐</div>
+              <div class="stat-info">
+                <div class="stat-label">LINE / Webオーダー</div>
+                <div style="margin-top:4px"><span class="badge badge-green">● 有効</span></div>
+              </div>
+            </div>
+            <div class="stat-card" style="padding:14px 16px; gap:10px;">
+              <div class="stat-icon yellow" style="width:36px;height:36px;border-radius:8px;font-size:16px">⏰</div>
+              <div class="stat-info">
+                <div class="stat-label">ラストオーダー</div>
+                <div style="margin-top:4px"><span class="badge badge-green">● 21:45</span></div>
+              </div>
+            </div>
+            <div class="stat-card" style="padding:14px 16px; gap:10px;">
+              <div class="stat-icon cyan" style="width:36px;height:36px;border-radius:8px;font-size:16px">📖</div>
+              <div class="stat-info">
+                <div class="stat-label">予約受付</div>
+                <div style="margin-top:4px"><span class="badge badge-green">● 有効</span></div>
+              </div>
+            </div>
+            <div class="stat-card" style="padding:14px 16px; gap:10px;">
+              <div class="stat-icon green" style="width:36px;height:36px;border-radius:8px;font-size:16px">🎫</div>
+              <div class="stat-info">
+                <div class="stat-label">ウェイトリスト</div>
+                <div style="margin-top:4px"><span class="badge badge-green">● 有効</span></div>
+              </div>
+            </div>
+            <div class="stat-card" style="padding:14px 16px; gap:10px;">
+              <div class="stat-icon cyan" style="width:36px;height:36px;border-radius:8px;font-size:16px">🤖</div>
+              <div class="stat-info">
+                <div class="stat-label">AI注文（音声＋文字）</div>
+                <div style="margin-top:4px"><span class="badge badge-green">● 両方有効</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav -->
+      <div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px;">
+        <a href="A1_001.html" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          前のステップ: 基本情報設定
+        </a>
+        <a href="A1_003.html" class="btn btn-primary">
+          次のステップ: 機能別詳細設定
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-wrapper -->
+
+<!-- Save toast -->
+<div id="toast" style="
+  position:fixed; bottom:24px; right:24px; z-index:999;
+  background:#10b981; color:#fff; padding:12px 20px; border-radius:10px;
+  font-size:0.85rem; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.15);
+  display:none; align-items:center; gap:8px;
+">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  設定を保存しました
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'op-mode' });
+
+  function toggleLastOrder(checkbox) {
+    const sub = document.getElementById('lo-sub');
+    sub.style.display = checkbox.checked ? '' : 'none';
+  }
+
+  function updateChannelStatus() {
+    // Could update summary badges dynamically — kept simple for mock
+  }
+
+  function handleSave() {
+    const toast = document.getElementById('toast');
+    toast.style.display = 'flex';
+    setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+</script>
+</body>
+</html>

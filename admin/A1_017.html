@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>新規メニュー登録 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Tab bar ── */
+    .tab-bar { display:flex; gap:0; border-bottom:2px solid var(--color-gray-200); margin-bottom:28px; overflow-x:auto; }
+    .tab-btn { display:flex; align-items:center; gap:7px; padding:11px 18px; font-size:0.83rem; font-weight:600; color:var(--color-gray-500); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:color var(--transition); }
+    .tab-btn:hover { color:var(--color-gray-800); }
+    .tab-btn.active { color:var(--color-danger); border-bottom-color:var(--color-danger); }
+    .tab-btn .tab-num { width:18px; height:18px; border-radius:50%; background:var(--color-gray-200); color:var(--color-gray-500); font-size:0.65rem; display:flex; align-items:center; justify-content:center; font-weight:700; }
+    .tab-btn.active .tab-num { background:var(--color-danger); color:#fff; }
+    .tab-btn.done .tab-num { background:var(--color-success); color:#fff; }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
+
+    /* ── Section header ── */
+    .sec-head { font-size:0.95rem; font-weight:700; color:var(--color-gray-900); margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--color-gray-100); }
+
+    /* ── Multi-lang tabs ── */
+    .lang-tab-bar { display:flex; gap:0; margin-bottom:10px; }
+    .lang-tab { padding:5px 12px; font-size:0.77rem; font-weight:600; border:1px solid var(--color-gray-300); background:var(--color-white); cursor:pointer; color:var(--color-gray-600); transition:background var(--transition); }
+    .lang-tab:first-child { border-radius:var(--radius-md) 0 0 var(--radius-md); }
+    .lang-tab:last-child  { border-radius:0 var(--radius-md) var(--radius-md) 0; }
+    .lang-tab + .lang-tab { border-left:none; }
+    .lang-tab.active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+
+    /* ── Tag checkboxes row ── */
+    .tag-checks { display:flex; flex-wrap:wrap; gap:10px; }
+    .tag-check-item { display:flex; align-items:center; gap:6px; padding:6px 12px; border:1px solid var(--color-gray-200); border-radius:var(--radius-full); font-size:0.8rem; cursor:pointer; background:var(--color-white); transition:border-color var(--transition), background var(--transition); }
+    .tag-check-item:has(input:checked) { border-color:var(--color-primary); background:#eff6ff; }
+    .tag-check-item input { accent-color:var(--color-primary); }
+
+    /* ── Period box ── */
+    .period-box { background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-lg); padding:16px 20px; margin-top:10px; }
+    .period-box-title { font-size:0.77rem; font-weight:600; color:#1e40af; margin-bottom:12px; }
+    .period-row { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .period-row .form-group { margin:0; flex:1; min-width:160px; }
+    .period-sep { font-size:1.2rem; color:var(--color-gray-400); flex-shrink:0; }
+    .period-note { font-size:0.73rem; color:#3b82f6; margin-top:10px; }
+
+    /* ── Customize option row ── */
+    .option-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .option-row input[type=text].form-control { flex:1; }
+    .option-row input[type=number].form-control { width:90px; }
+    .option-remove { width:30px; height:30px; border-radius:var(--radius-md); background:var(--color-danger-light); color:var(--color-danger); border:none; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; font-size:15px; transition:background var(--transition); }
+    .option-remove:hover { background:var(--color-danger); color:#fff; }
+
+    /* ── Customize group card ── */
+    .custom-group-card { border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:16px 18px; margin-bottom:14px; }
+    .custom-group-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+    .custom-group-head .form-group { margin:0; }
+
+    /* ── Ingredient row ── */
+    .ingr-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+    .ingr-row input[type=text].form-control { flex:2; }
+    .ingr-row input[type=text].form-control.unit { flex:1; }
+    .ingr-row input[type=number].form-control { width:80px; }
+
+    /* ── Step row ── */
+    .step-row { display:flex; align-items:flex-start; gap:10px; margin-bottom:10px; }
+    .step-num { width:28px; height:28px; border-radius:50%; background:var(--color-primary); color:#fff; font-size:0.75rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:8px; }
+    .step-row textarea.form-control { flex:1; }
+
+    /* ── Allergen chips ── */
+    .allergen-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(110px,1fr)); gap:8px; }
+    .allergen-item { display:flex; align-items:center; gap:7px; padding:7px 10px; border:1px solid var(--color-gray-200); border-radius:var(--radius-md); font-size:0.79rem; cursor:pointer; background:var(--color-white); }
+    .allergen-item:has(input:checked) { border-color:var(--color-danger); background:#fff5f5; color:var(--color-danger); font-weight:600; }
+    .allergen-item input { accent-color:var(--color-danger); }
+
+    /* ── Nutrition grid ── */
+    .nutri-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(130px,1fr)); gap:12px; }
+    .nutri-item { display:flex; flex-direction:column; gap:4px; }
+    .nutri-item label { font-size:0.73rem; font-weight:600; color:var(--color-gray-500); }
+
+    /* ── AI priority slider ── */
+    .priority-row { display:flex; align-items:center; gap:12px; }
+    .priority-row input[type=range] { flex:1; accent-color:var(--color-primary); }
+    .priority-labels { display:flex; justify-content:space-between; font-size:0.7rem; color:var(--color-gray-400); margin-top:4px; }
+
+    /* ── Upsell chip input ── */
+    .chip-input-wrap { display:flex; flex-wrap:wrap; gap:6px; padding:8px 10px; border:1px solid var(--color-gray-300); border-radius:var(--radius-md); min-height:42px; cursor:text; background:var(--color-white); }
+    .chip { display:flex; align-items:center; gap:5px; padding:3px 10px; background:var(--color-primary-light); color:var(--color-primary); border-radius:var(--radius-full); font-size:0.78rem; font-weight:600; }
+    .chip button { background:none; border:none; cursor:pointer; color:var(--color-primary); font-size:14px; line-height:1; padding:0; }
+    .chip-input { border:none; outline:none; font-size:0.8rem; min-width:80px; background:transparent; }
+
+    /* ── Upload zone ── */
+    .upload-zone { border:2px dashed var(--color-gray-300); border-radius:var(--radius-xl); padding:40px 20px; text-align:center; cursor:pointer; transition:border-color var(--transition), background var(--transition); }
+    .upload-zone:hover, .upload-zone.drag { border-color:var(--color-primary); background:#eff6ff; }
+    .upload-zone svg { color:var(--color-gray-300); }
+    .upload-zone p { font-size:0.82rem; color:var(--color-gray-500); margin-top:8px; }
+    .upload-zone small { font-size:0.72rem; color:var(--color-gray-400); }
+
+    /* ── Gallery grid ── */
+    .gallery-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(100px,1fr)); gap:10px; margin-top:12px; }
+    .gallery-item { border:1px solid var(--color-gray-200); border-radius:var(--radius-md); aspect-ratio:1; background:var(--color-gray-100); display:flex; align-items:center; justify-content:center; color:var(--color-gray-400); font-size:0.72rem; position:relative; cursor:pointer; }
+    .gallery-item.add { border-style:dashed; border-color:var(--color-primary); color:var(--color-primary); font-size:1.5rem; }
+
+    /* ── Sticky top bar ── */
+    .sticky-bar { position:sticky; top:var(--header-height); z-index:30; background:var(--color-white); border-bottom:1px solid var(--color-gray-200); padding:10px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+
+    /* ── Form section card ── */
+    .form-section { background:var(--color-white); border:1px solid var(--color-gray-200); border-radius:var(--radius-xl); padding:22px 24px; margin-bottom:20px; box-shadow:var(--shadow-sm); }
+
+    @media (max-width:640px) {
+      .grid-2 { grid-template-columns:1fr !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky action bar -->
+    <div class="sticky-bar">
+      <nav class="breadcrumb" style="margin:0">
+        <a href="index.html">ホーム</a>
+        <span class="breadcrumb-sep">›</span>
+        <a href="A1_016.html">メニュー管理</a>
+        <span class="breadcrumb-sep">›</span>
+        <span>新規登録</span>
+      </nav>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a href="A1_016.html" class="btn btn-secondary">キャンセル</a>
+        <button class="btn btn-outline" onclick="handleSave(false)">一時保存</button>
+        <button class="btn btn-primary" onclick="handleSave(true)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          保存して完了
+        </button>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Page heading -->
+      <div style="margin-bottom:22px">
+        <h1 class="page-title">新規メニュー登録</h1>
+        <p class="page-subtitle">新しいメニューアイテムを登録します。</p>
+      </div>
+
+      <!-- ── 6-Tab navigation ── -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="basic"    onclick="switchTab('basic')">
+          <span class="tab-num">1</span> 基本情報
+        </button>
+        <button class="tab-btn" data-tab="custom"   onclick="switchTab('custom')">
+          <span class="tab-num">2</span> カスタマイズ
+        </button>
+        <button class="tab-btn" data-tab="recipe"   onclick="switchTab('recipe')">
+          <span class="tab-num">3</span> レシピ
+        </button>
+        <button class="tab-btn" data-tab="nutri"    onclick="switchTab('nutri')">
+          <span class="tab-num">4</span> 栄養成分
+        </button>
+        <button class="tab-btn" data-tab="ai"       onclick="switchTab('ai')">
+          <span class="tab-num">5</span> AI設定
+        </button>
+        <button class="tab-btn" data-tab="image"    onclick="switchTab('image')">
+          <span class="tab-num">6</span> 画像
+        </button>
+      </div>
+
+
+      <!-- ══════════════════════════════════════
+           TAB 1 — 基本情報
+      ══════════════════════════════════════ -->
+      <div class="tab-pane active" id="pane-basic">
+
+        <!-- 商品情報 -->
+        <div class="form-section">
+          <div class="sec-head">商品情報</div>
+
+          <div class="grid grid-2" style="gap:16px;margin-bottom:16px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">商品名（管理用）<span class="required">*</span></label>
+              <input type="text" class="form-control" value="とんこつラーメン" placeholder="例：とんこつラーメン">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">商品番号</label>
+              <input type="text" class="form-control" value="F-001" placeholder="F-001">
+            </div>
+          </div>
+
+          <div class="grid grid-2" style="gap:16px;margin-bottom:16px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">表示名（POS表示）<span class="required">*</span></label>
+              <input type="text" class="form-control" value="とんこつラーメン" placeholder="POSに表示される名前">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">カテゴリ <span class="required">*</span></label>
+              <select class="form-control">
+                <option>フード</option>
+                <option>ドリンク</option>
+                <option>デザート</option>
+                <option>食べ放題</option>
+                <option>テイクアウト専用</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 多言語表示名 -->
+          <div class="form-group" style="margin-bottom:16px">
+            <label class="form-label">多言語表示名 <span style="font-size:0.72rem;color:var(--color-gray-400);font-weight:400">（任意）</span></label>
+            <div class="grid grid-2" style="gap:12px;margin-bottom:10px">
+              <div>
+                <label style="font-size:0.75rem;font-weight:600;color:var(--color-gray-600);display:flex;align-items:center;gap:5px;margin-bottom:5px">🇬🇧 English</label>
+                <input type="text" class="form-control" value="Tonkotsu Ramen" placeholder="Tonkotsu Ramen">
+              </div>
+              <div>
+                <label style="font-size:0.75rem;font-weight:600;color:var(--color-gray-600);display:flex;align-items:center;gap:5px;margin-bottom:5px">🇨🇳 中文</label>
+                <input type="text" class="form-control" value="豚骨拉面" placeholder="豚骨拉面">
+              </div>
+            </div>
+            <div style="max-width:50%">
+              <label style="font-size:0.75rem;font-weight:600;color:var(--color-gray-600);display:flex;align-items:center;gap:5px;margin-bottom:5px">🇰🇷 한국어</label>
+              <input type="text" class="form-control" placeholder="돼지뼈 라면">
+            </div>
+          </div>
+
+          <!-- サブカテゴリ + 税区分 -->
+          <div class="grid grid-2" style="gap:16px;margin-bottom:16px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">サブカテゴリ</label>
+              <div style="display:flex;gap:8px">
+                <select class="form-control" style="flex:1">
+                  <option selected>ラーメン</option>
+                  <option>パスタ</option>
+                  <option>ピザ</option>
+                  <option>サラダ</option>
+                  <option>デザート</option>
+                </select>
+                <button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="showToast('サブカテゴリを追加')">+ 追加</button>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">税区分</label>
+              <select class="form-control">
+                <option selected>標準税率（10%）</option>
+                <option>軽減税率（8%）</option>
+                <option>非課税</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="form-group" style="margin:0">
+            <label class="form-label">タグ</label>
+            <div class="tag-checks">
+              <label class="tag-check-item">
+                <input type="checkbox" checked> ⭐ 人気商品
+              </label>
+              <label class="tag-check-item">
+                <input type="checkbox"> 🌿 季節限定
+              </label>
+              <label class="tag-check-item">
+                <input type="checkbox"> 🥡 テイクアウト対応
+              </label>
+              <label class="tag-check-item">
+                <input type="checkbox"> 🌶️ 辛口
+              </label>
+              <label class="tag-check-item">
+                <input type="checkbox"> 🌱 ベジタリアン
+              </label>
+              <label class="tag-check-item">
+                <input type="checkbox"> ⚡ 早出し
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 価格・在庫 -->
+        <div class="form-section">
+          <div class="sec-head">価格・在庫</div>
+
+          <div class="grid grid-2" style="gap:16px;margin-bottom:16px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">販売価格（円）<span class="required">*</span></label>
+              <input type="number" class="form-control" value="980" min="0" step="10" placeholder="0">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">原価（円）</label>
+              <input type="number" class="form-control" value="350" min="0" step="10" placeholder="0">
+            </div>
+          </div>
+
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.83rem;cursor:pointer;margin-bottom:12px">
+            <input type="checkbox" id="stock-chk" checked style="accent-color:var(--color-primary)" onchange="toggleStock(this)">
+            <span style="font-weight:600">在庫管理</span>
+            <span style="font-size:0.75rem;color:var(--color-gray-400)">（ONにすると在庫数を管理します）</span>
+          </label>
+
+          <div id="stock-field">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">在庫数</label>
+              <input type="number" class="form-control" style="max-width:200px" placeholder="在庫数を入力" min="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- 販売期間 -->
+        <div class="form-section">
+          <div class="sec-head">販売期間</div>
+
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-bottom:6px">
+            <label class="toggle">
+              <input type="checkbox" id="period-toggle" checked onchange="togglePeriod(this)">
+              <span class="toggle-track"></span>
+            </label>
+            <span style="font-size:0.83rem;font-weight:600">設定する</span>
+          </label>
+
+          <div id="period-box" class="period-box">
+            <div class="period-box-title">販売期間を設定する</div>
+            <div class="period-row">
+              <div class="form-group">
+                <label class="form-label" style="font-size:0.73rem">開始日</label>
+                <input type="date" class="form-control" value="2025-10-01">
+              </div>
+              <span class="period-sep">→</span>
+              <div class="form-group">
+                <label class="form-label" style="font-size:0.73rem">終了日</label>
+                <input type="date" class="form-control" value="2025-12-31">
+              </div>
+            </div>
+            <p class="period-note">※ 季節限定にチェックがない場合、期間設定は無視されます。</p>
+          </div>
+        </div>
+
+        <!-- 販売ステータス -->
+        <div class="form-section">
+          <div class="sec-head">販売ステータス</div>
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:7px;font-size:0.83rem;cursor:pointer">
+              <input type="radio" name="sell-status" checked style="accent-color:var(--color-success)"> 販売中
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:0.83rem;cursor:pointer">
+              <input type="radio" name="sell-status" style="accent-color:var(--color-warning)"> 一時停止
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-size:0.83rem;cursor:pointer">
+              <input type="radio" name="sell-status" style="accent-color:var(--color-danger)"> 在庫切れ
+            </label>
+          </div>
+        </div>
+
+        <!-- Bottom nav -->
+        <div style="display:flex;justify-content:flex-end;gap:8px">
+          <a href="A1_016.html" class="btn btn-ghost">キャンセル</a>
+          <button class="btn btn-primary" onclick="switchTab('custom')">
+            次へ: カスタマイズ
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+
+      </div><!-- /pane-basic -->
+
+
+      <!-- ══════════════════════════════════════
+           TAB 2 — カスタマイズ
+      ══════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-custom">
+
+        <div class="form-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="sec-head" style="margin:0;border:none;padding:0">カスタマイズ設定</div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <label class="toggle">
+                <input type="checkbox" id="custom-toggle" checked onchange="toggleCustom(this)">
+                <span class="toggle-track"></span>
+              </label>
+              <span style="font-size:0.83rem;font-weight:600">カスタマイズを有効化</span>
+            </label>
+          </div>
+
+          <div id="custom-body">
+            <div id="custom-groups">
+
+              <!-- Group 1 -->
+              <div class="custom-group-card">
+                <div class="custom-group-head">
+                  <div class="form-group" style="flex:1;min-width:140px">
+                    <label class="form-label" style="font-size:0.73rem">グループ名 *</label>
+                    <input type="text" class="form-control" value="サイズ" placeholder="例：サイズ">
+                  </div>
+                  <div class="form-group" style="min-width:160px">
+                    <label class="form-label" style="font-size:0.73rem">選択タイプ</label>
+                    <select class="form-control">
+                      <option selected>単一選択（ラジオ）</option>
+                      <option>複数選択（チェックボックス）</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="min-width:80px">
+                    <label class="form-label" style="font-size:0.73rem">必須</label>
+                    <select class="form-control">
+                      <option>任意</option>
+                      <option selected>必須</option>
+                    </select>
+                  </div>
+                  <button class="option-remove" style="margin-top:20px" onclick="this.closest('.custom-group-card').remove()">×</button>
+                </div>
+
+                <div class="form-label" style="font-size:0.73rem;margin-bottom:8px">オプション</div>
+                <div id="options-1">
+                  <div class="option-row">
+                    <input type="text" class="form-control" value="大" placeholder="オプション名">
+                    <span style="font-size:0.8rem;color:var(--color-gray-500);white-space:nowrap">価格差</span>
+                    <input type="number" class="form-control" value="100" placeholder="±0">
+                    <span style="font-size:0.8rem;color:var(--color-gray-500)">円</span>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;white-space:nowrap">
+                      <input type="radio" name="default-1"> デフォルト
+                    </label>
+                    <button class="option-remove" onclick="this.closest('.option-row').remove()">×</button>
+                  </div>
+                  <div class="option-row">
+                    <input type="text" class="form-control" value="中" placeholder="オプション名">
+                    <span style="font-size:0.8rem;color:var(--color-gray-500);white-space:nowrap">価格差</span>
+                    <input type="number" class="form-control" value="0" placeholder="±0">
+                    <span style="font-size:0.8rem;color:var(--color-gray-500)">円</span>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;white-space:nowrap">
+                      <input type="radio" name="default-1" checked> デフォルト
+                    </label>
+                    <button class="option-remove" onclick="this.closest('.option-row').remove()">×</button>
+                  </div>
+                  <div class="option-row">
+                    <input type="text" class="form-control" value="小" placeholder="オプション名">
+                    <span style="font-size:0.8rem;color:var(--color-gray-500);white-space:nowrap">価格差</span>
+                    <input type="number" class="form-control" value="-50" placeholder="±0">
+                    <span style="font-size:0.8rem;color:var(--color-gray-500)">円</span>
+                    <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;white-space:nowrap">
+                      <input type="radio" name="default-1"> デフォルト
+                    </label>
+                    <button class="option-remove" onclick="this.closest('.option-row').remove()">×</button>
+                  </div>
+                </div>
+                <button class="btn btn-outline btn-sm" style="margin-top:6px" onclick="addOptionRow('options-1', 'default-1')">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  オプションを追加
+                </button>
+              </div>
+
+            </div><!-- /custom-groups -->
+
+            <button class="btn btn-outline" onclick="addCustomGroup()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              カスタマイズグループを追加
+            </button>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <button class="btn btn-ghost" onclick="switchTab('basic')">← 前へ</button>
+          <button class="btn btn-primary" onclick="switchTab('recipe')">次へ: レシピ <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+
+      </div><!-- /pane-custom -->
+
+
+      <!-- ══════════════════════════════════════
+           TAB 3 — レシピ
+      ══════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-recipe">
+
+        <!-- 材料 -->
+        <div class="form-section">
+          <div class="sec-head">材料・原材料</div>
+          <div id="ingr-list">
+            <div class="ingr-row">
+              <input type="text" class="form-control" value="豚骨" placeholder="材料名">
+              <input type="number" class="form-control" value="500" placeholder="量" style="width:80px">
+              <input type="text" class="form-control unit" value="g" placeholder="単位">
+              <button class="option-remove" onclick="this.closest('.ingr-row').remove()">×</button>
+            </div>
+            <div class="ingr-row">
+              <input type="text" class="form-control" value="中華麺" placeholder="材料名">
+              <input type="number" class="form-control" value="150" placeholder="量" style="width:80px">
+              <input type="text" class="form-control unit" value="g" placeholder="単位">
+              <button class="option-remove" onclick="this.closest('.ingr-row').remove()">×</button>
+            </div>
+            <div class="ingr-row">
+              <input type="text" class="form-control" value="チャーシュー" placeholder="材料名">
+              <input type="number" class="form-control" value="3" placeholder="量" style="width:80px">
+              <input type="text" class="form-control unit" value="枚" placeholder="単位">
+              <button class="option-remove" onclick="this.closest('.ingr-row').remove()">×</button>
+            </div>
+            <div class="ingr-row">
+              <input type="text" class="form-control" value="ネギ" placeholder="材料名">
+              <input type="number" class="form-control" value="20" placeholder="量" style="width:80px">
+              <input type="text" class="form-control unit" value="g" placeholder="単位">
+              <button class="option-remove" onclick="this.closest('.ingr-row').remove()">×</button>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="addIngredient()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            材料を追加
+          </button>
+        </div>
+
+        <!-- 調理手順 -->
+        <div class="form-section">
+          <div class="sec-head">調理手順</div>
+          <div id="step-list">
+            <div class="step-row">
+              <div class="step-num">1</div>
+              <textarea class="form-control" rows="2" placeholder="手順を入力">豚骨を水から炊いて白濁スープを取る（約4時間）</textarea>
+              <button class="option-remove" style="margin-top:8px" onclick="removeStep(this)">×</button>
+            </div>
+            <div class="step-row">
+              <div class="step-num">2</div>
+              <textarea class="form-control" rows="2" placeholder="手順を入力">スープに醤油タレ・背脂を加えて味を調える</textarea>
+              <button class="option-remove" style="margin-top:8px" onclick="removeStep(this)">×</button>
+            </div>
+            <div class="step-row">
+              <div class="step-num">3</div>
+              <textarea class="form-control" rows="2" placeholder="手順を入力">麺を茹でて盛り付け、チャーシュー・ネギ・煮卵を乗せる</textarea>
+              <button class="option-remove" style="margin-top:8px" onclick="removeStep(this)">×</button>
+            </div>
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="addStep()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            手順を追加
+          </button>
+        </div>
+
+        <!-- 参考画像 / 動画 -->
+        <div class="form-section">
+          <div class="sec-head">参考画像・動画（スタッフ向け）</div>
+          <div class="grid grid-2" style="gap:16px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">参考画像</label>
+              <div class="upload-zone" onclick="showToast('ファイルを選択')">
+                <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <p>クリックしてアップロード</p>
+                <small>JPG / PNG / GIF 対応</small>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">参考動画URL</label>
+              <input type="url" class="form-control" placeholder="https://youtube.com/...">
+              <div class="form-hint">YouTubeまたはVimeoのURLを入力</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <button class="btn btn-ghost" onclick="switchTab('custom')">← 前へ</button>
+          <button class="btn btn-primary" onclick="switchTab('nutri')">次へ: 栄養成分 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+
+      </div><!-- /pane-recipe -->
+
+
+      <!-- ══════════════════════════════════════
+           TAB 4 — 栄養成分
+      ══════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-nutri">
+
+        <!-- 栄養成分 -->
+        <div class="form-section">
+          <div class="sec-head">栄養成分（1食あたり）</div>
+          <div class="nutri-grid">
+            <div class="nutri-item">
+              <label>カロリー (kcal)</label>
+              <input type="number" class="form-control" value="650" placeholder="0">
+            </div>
+            <div class="nutri-item">
+              <label>たんぱく質 (g)</label>
+              <input type="number" class="form-control" value="21.5" step="0.1" placeholder="0">
+            </div>
+            <div class="nutri-item">
+              <label>脂質 (g)</label>
+              <input type="number" class="form-control" value="18.2" step="0.1" placeholder="0">
+            </div>
+            <div class="nutri-item">
+              <label>炭水化物 (g)</label>
+              <input type="number" class="form-control" value="82.0" step="0.1" placeholder="0">
+            </div>
+            <div class="nutri-item">
+              <label>食塩相当量 (g)</label>
+              <input type="number" class="form-control" value="5.8" step="0.1" placeholder="0">
+            </div>
+            <div class="nutri-item">
+              <label>糖質 (g)</label>
+              <input type="number" class="form-control" value="78.5" step="0.1" placeholder="0">
+            </div>
+          </div>
+        </div>
+
+        <!-- アレルゲン -->
+        <div class="form-section">
+          <div class="sec-head">アレルゲン（特定原材料）</div>
+          <p class="form-hint" style="margin-bottom:14px">含まれるアレルゲンにチェックを入れてください。POSおよびAIに表示されます。</p>
+          <div class="allergen-grid">
+            <label class="allergen-item"><input type="checkbox"> 🥚 卵</label>
+            <label class="allergen-item"><input type="checkbox" checked> 🥛 乳</label>
+            <label class="allergen-item"><input type="checkbox" checked> 🌾 小麦</label>
+            <label class="allergen-item"><input type="checkbox"> 🍤 えび</label>
+            <label class="allergen-item"><input type="checkbox"> 🦀 かに</label>
+            <label class="allergen-item"><input type="checkbox"> そば</label>
+            <label class="allergen-item"><input type="checkbox"> 🥜 落花生</label>
+            <label class="allergen-item"><input type="checkbox"> 🍎 りんご</label>
+            <label class="allergen-item"><input type="checkbox"> 🍑 もも</label>
+            <label class="allergen-item"><input type="checkbox"> 🥩 牛肉</label>
+            <label class="allergen-item"><input type="checkbox"> 🐷 豚肉</label>
+            <label class="allergen-item"><input type="checkbox"> 🍗 鶏肉</label>
+            <label class="allergen-item"><input type="checkbox"> 🐟 さば</label>
+            <label class="allergen-item"><input type="checkbox"> いか</label>
+            <label class="allergen-item"><input type="checkbox"> あわび</label>
+            <label class="allergen-item"><input type="checkbox"> ゼラチン</label>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <button class="btn btn-ghost" onclick="switchTab('recipe')">← 前へ</button>
+          <button class="btn btn-primary" onclick="switchTab('ai')">次へ: AI設定 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+
+      </div><!-- /pane-nutri -->
+
+
+      <!-- ══════════════════════════════════════
+           TAB 5 — AI設定
+      ══════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-ai">
+
+        <div class="form-section">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+            <div class="sec-head" style="margin:0;border:none;padding:0">AIおすすめ設定</div>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+              <label class="toggle">
+                <input type="checkbox" checked>
+                <span class="toggle-track"></span>
+              </label>
+              <span style="font-size:0.83rem;font-weight:600">AIおすすめリストに追加</span>
+            </label>
+          </div>
+
+          <!-- AI説明文 -->
+          <div class="form-group">
+            <label class="form-label">AI説明文</label>
+            <p class="form-hint">AIが顧客に説明する際に使用するテキストです。多言語で設定できます。</p>
+            <div class="lang-tab-bar" style="margin-top:8px">
+              <button class="lang-tab active" onclick="switchLangTab(this,'ai-ja')">🇯🇵 日本語</button>
+              <button class="lang-tab"        onclick="switchLangTab(this,'ai-en')">🇬🇧 English</button>
+              <button class="lang-tab"        onclick="switchLangTab(this,'ai-zh')">🇨🇳 中文</button>
+            </div>
+            <textarea class="form-control" id="ai-ja" rows="3">こってりとした豚骨スープが自慢の一品。麺の固さや量もカスタマイズできます。</textarea>
+            <textarea class="form-control" id="ai-en" rows="3" style="display:none">Our signature rich tonkotsu broth ramen. Noodle firmness and portion can be customized.</textarea>
+            <textarea class="form-control" id="ai-zh" rows="3" style="display:none">浓郁猪骨汤底的招牌拉面，面条软硬和份量均可自由调整。</textarea>
+          </div>
+
+          <div class="grid grid-2" style="gap:16px;margin-bottom:16px">
+            <!-- おすすめ条件 -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">おすすめ条件</label>
+              <select class="form-control">
+                <option selected>毎日</option>
+                <option>平日のみ</option>
+                <option>週末のみ</option>
+                <option>ランチタイムのみ</option>
+                <option>ディナーのみ</option>
+              </select>
+            </div>
+            <!-- 調理時間 -->
+            <div class="form-group" style="margin:0">
+              <label class="form-label">調理時間</label>
+              <select class="form-control">
+                <option>短い（〜5分）</option>
+                <option selected>普通（5〜15分）</option>
+                <option>長い（15分以上）</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 制限(NG) -->
+          <div class="form-group">
+            <label class="form-label">制限（NG）</label>
+            <p class="form-hint">このメニューを推薦しない対象を設定します。</p>
+            <div class="tag-checks" style="margin-top:8px">
+              <label class="tag-check-item"><input type="checkbox"> 🐄 牛肉NG</label>
+              <label class="tag-check-item"><input type="checkbox"> 🐷 豚肉NG</label>
+              <label class="tag-check-item"><input type="checkbox"> 🐔 鶏肉NG</label>
+              <label class="tag-check-item"><input type="checkbox"> 🌱 ベジタリアン</label>
+              <label class="tag-check-item"><input type="checkbox"> 🚫 混雑時除外</label>
+              <label class="tag-check-item"><input type="checkbox"> 👤 スタッフNG</label>
+            </div>
+          </div>
+
+          <!-- 関連アップセル -->
+          <div class="form-group">
+            <label class="form-label">関連アップセル</label>
+            <p class="form-hint">このメニュー注文時にAIが一緒に勧めるメニューを設定します。</p>
+            <div class="chip-input-wrap" id="upsell-wrap" onclick="document.getElementById('upsell-input').focus()">
+              <span class="chip">🍺 生ビール <button onclick="removeChip(this)">×</button></span>
+              <span class="chip">🥃 ハイボール <button onclick="removeChip(this)">×</button></span>
+              <span class="chip">🍷 ワイン <button onclick="removeChip(this)">×</button></span>
+              <input type="text" class="chip-input" id="upsell-input" placeholder="メニュー名を入力してEnter" onkeydown="addChip(event)">
+            </div>
+          </div>
+
+          <!-- おすすめ優先度 -->
+          <div class="form-group" style="margin:0">
+            <label class="form-label">おすすめ優先度</label>
+            <p class="form-hint" style="margin-bottom:10px">数値が高いほど優先的に表示されます。</p>
+            <div class="priority-row">
+              <span style="font-size:0.78rem;color:var(--color-gray-500)">低</span>
+              <input type="range" min="1" max="5" value="3" id="priority-slider" oninput="updatePriority(this.value)">
+              <span style="font-size:0.78rem;color:var(--color-gray-500)">高</span>
+              <span id="priority-val" style="font-size:1rem;font-weight:800;color:var(--color-primary);min-width:80px;text-align:right">3 — 通常</span>
+            </div>
+            <div class="priority-labels">
+              <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <button class="btn btn-ghost" onclick="switchTab('nutri')">← 前へ</button>
+          <button class="btn btn-primary" onclick="switchTab('image')">次へ: 画像 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+
+      </div><!-- /pane-ai -->
+
+
+      <!-- ══════════════════════════════════════
+           TAB 6 — 画像
+      ══════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-image">
+
+        <!-- メイン画像 -->
+        <div class="form-section">
+          <div class="sec-head">メイン画像（POS / AI / Web 表示）</div>
+          <div class="upload-zone" id="main-upload" onclick="showToast('ファイルを選択')"
+               ondragover="this.classList.add('drag');event.preventDefault()"
+               ondragleave="this.classList.remove('drag')"
+               ondrop="this.classList.remove('drag');event.preventDefault()">
+            <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <circle cx="8.5" cy="8.5" r="1.5"/>
+              <polyline points="21 15 16 10 5 21"/>
+            </svg>
+            <p style="font-weight:600">クリックまたはドラッグ＆ドロップ</p>
+            <small>PNG / JPG / GIF　推奨サイズ：800 × 400 px　最大 5MB</small>
+          </div>
+        </div>
+
+        <!-- ギャラリー -->
+        <div class="form-section">
+          <div class="sec-head">ギャラリー（サブ画像）</div>
+          <p class="form-hint" style="margin-bottom:14px">詳細ページやAI説明に使用される追加画像を登録します。最大8枚まで。</p>
+          <div class="gallery-grid">
+            <div class="gallery-item">
+              <span style="font-size:0.7rem;color:var(--color-gray-400)">画像1</span>
+            </div>
+            <div class="gallery-item">
+              <span style="font-size:0.7rem;color:var(--color-gray-400)">画像2</span>
+            </div>
+            <div class="gallery-item add" onclick="showToast('画像を追加')">+</div>
+            <div class="gallery-item add" onclick="showToast('画像を追加')">+</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <button class="btn btn-ghost" onclick="switchTab('ai')">← 前へ</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="handleSave(false)">一時保存</button>
+            <button class="btn btn-primary" onclick="handleSave(true)">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              保存して完了
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /pane-image -->
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">保存しました</span>
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'menu' });
+
+  /* ── Tab switch ── */
+  const TABS = ['basic','custom','recipe','nutri','ai','image'];
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + id));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ── URL hash ── */
+  (function() {
+    const h = location.hash.replace('#','');
+    if (TABS.includes(h)) switchTab(h);
+  })();
+
+  /* ── Lang tab (AI 説明文) ── */
+  function switchLangTab(btn, id) {
+    const bar = btn.closest('.lang-tab-bar');
+    bar.querySelectorAll('.lang-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['ai-ja','ai-en','ai-zh'].forEach(i => {
+      const el = document.getElementById(i);
+      if (el) el.style.display = (i === id) ? '' : 'none';
+    });
+  }
+
+  /* ── Toggle: 在庫管理 ── */
+  function toggleStock(chk) {
+    document.getElementById('stock-field').style.display = chk.checked ? '' : 'none';
+  }
+
+  /* ── Toggle: 販売期間 ── */
+  function togglePeriod(chk) {
+    document.getElementById('period-box').style.display = chk.checked ? '' : 'none';
+  }
+
+  /* ── Toggle: カスタマイズ ── */
+  function toggleCustom(chk) {
+    document.getElementById('custom-body').style.opacity = chk.checked ? '1' : '0.4';
+    document.getElementById('custom-body').style.pointerEvents = chk.checked ? '' : 'none';
+  }
+
+  /* ── Add option row ── */
+  function addOptionRow(containerId, radioName) {
+    const container = document.getElementById(containerId);
+    const row = document.createElement('div');
+    row.className = 'option-row';
+    row.innerHTML = `
+      <input type="text" class="form-control" placeholder="オプション名">
+      <span style="font-size:0.8rem;color:var(--color-gray-500);white-space:nowrap">価格差</span>
+      <input type="number" class="form-control" value="0" placeholder="±0">
+      <span style="font-size:0.8rem;color:var(--color-gray-500)">円</span>
+      <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;white-space:nowrap">
+        <input type="radio" name="${radioName}"> デフォルト
+      </label>
+      <button class="option-remove" onclick="this.closest('.option-row').remove()">×</button>`;
+    container.appendChild(row);
+  }
+
+  /* ── Add customize group ── */
+  let _grpCount = 2;
+  function addCustomGroup() {
+    const id = 'options-' + _grpCount;
+    const radio = 'default-' + _grpCount;
+    const card = document.createElement('div');
+    card.className = 'custom-group-card';
+    card.innerHTML = `
+      <div class="custom-group-head">
+        <div class="form-group" style="flex:1;min-width:140px">
+          <label class="form-label" style="font-size:0.73rem">グループ名 *</label>
+          <input type="text" class="form-control" placeholder="例：麺の固さ">
+        </div>
+        <div class="form-group" style="min-width:160px">
+          <label class="form-label" style="font-size:0.73rem">選択タイプ</label>
+          <select class="form-control">
+            <option selected>単一選択（ラジオ）</option>
+            <option>複数選択（チェックボックス）</option>
+          </select>
+        </div>
+        <div class="form-group" style="min-width:80px">
+          <label class="form-label" style="font-size:0.73rem">必須</label>
+          <select class="form-control"><option selected>任意</option><option>必須</option></select>
+        </div>
+        <button class="option-remove" style="margin-top:20px" onclick="this.closest('.custom-group-card').remove()">×</button>
+      </div>
+      <div class="form-label" style="font-size:0.73rem;margin-bottom:8px">オプション</div>
+      <div id="${id}">
+        <div class="option-row">
+          <input type="text" class="form-control" placeholder="オプション名">
+          <span style="font-size:0.8rem;color:var(--color-gray-500);white-space:nowrap">価格差</span>
+          <input type="number" class="form-control" value="0" placeholder="±0">
+          <span style="font-size:0.8rem;color:var(--color-gray-500)">円</span>
+          <label style="display:flex;align-items:center;gap:4px;font-size:0.75rem;white-space:nowrap">
+            <input type="radio" name="${radio}" checked> デフォルト
+          </label>
+          <button class="option-remove" onclick="this.closest('.option-row').remove()">×</button>
+        </div>
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin-top:6px" onclick="addOptionRow('${id}','${radio}')">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        オプションを追加
+      </button>`;
+    document.getElementById('custom-groups').appendChild(card);
+    _grpCount++;
+  }
+
+  /* ── Add ingredient ── */
+  function addIngredient() {
+    const list = document.getElementById('ingr-list');
+    const row = document.createElement('div');
+    row.className = 'ingr-row';
+    row.innerHTML = `
+      <input type="text" class="form-control" placeholder="材料名">
+      <input type="number" class="form-control" placeholder="量" style="width:80px">
+      <input type="text" class="form-control unit" placeholder="単位">
+      <button class="option-remove" onclick="this.closest('.ingr-row').remove()">×</button>`;
+    list.appendChild(row);
+  }
+
+  /* ── Add step ── */
+  function addStep() {
+    const list = document.getElementById('step-list');
+    const num = list.querySelectorAll('.step-row').length + 1;
+    const row = document.createElement('div');
+    row.className = 'step-row';
+    row.innerHTML = `
+      <div class="step-num">${num}</div>
+      <textarea class="form-control" rows="2" placeholder="手順を入力"></textarea>
+      <button class="option-remove" style="margin-top:8px" onclick="removeStep(this)">×</button>`;
+    list.appendChild(row);
+  }
+
+  function removeStep(btn) {
+    btn.closest('.step-row').remove();
+    // renumber
+    document.querySelectorAll('#step-list .step-num').forEach((el, i) => el.textContent = i + 1);
+  }
+
+  /* ── Upsell chips ── */
+  function addChip(e) {
+    if (e.key !== 'Enter') return;
+    const input = document.getElementById('upsell-input');
+    const val = input.value.trim();
+    if (!val) return;
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.innerHTML = val + ' <button onclick="removeChip(this)">×</button>';
+    document.getElementById('upsell-wrap').insertBefore(chip, input);
+    input.value = '';
+  }
+
+  function removeChip(btn) {
+    btn.closest('.chip').remove();
+  }
+
+  /* ── Priority label ── */
+  const PRIORITY_LABELS = ['', '1 — 低い', '2 — やや低い', '3 — 通常', '4 — やや高い', '5 — 高い'];
+  function updatePriority(val) {
+    document.getElementById('priority-val').textContent = PRIORITY_LABELS[val] || val;
+  }
+
+  /* ── Save ── */
+  function handleSave(complete) {
+    const msg = complete ? '✅ メニューを保存しました' : '一時保存しました';
+    showToast(msg);
+    if (complete) setTimeout(() => { location.href = 'A1_016.html'; }, 1400);
+  }
+
+  /* ── Toast ── */
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.style.display = 'flex';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2600);
+  }
+</script>
+</body>
+</html>

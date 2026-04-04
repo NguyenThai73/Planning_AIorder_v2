@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>顧客管理 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Stats ── */
+    .stats-row { display:flex; gap:0; border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; }
+    .stat-item { flex:1; padding:12px 16px; text-align:center; border-right:1px solid var(--color-gray-200); }
+    .stat-item:last-child { border-right:none; }
+    .stat-val { font-size:1.3rem; font-weight:800; color:var(--color-gray-900); line-height:1; }
+    .stat-lbl { font-size:0.7rem; color:var(--color-gray-500); margin-top:3px; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-bar .search-wrap { position:relative; flex:1; min-width:200px; }
+    .filter-bar .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--color-gray-400); }
+    .filter-bar .search-wrap input { padding-left:34px; }
+
+    /* ── Customer table ── */
+    .cust-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .cust-table th { padding:10px 12px; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-gray-500); border-bottom:2px solid var(--color-gray-200); background:var(--color-gray-50); white-space:nowrap; }
+    .cust-table td { padding:11px 12px; border-bottom:1px solid var(--color-gray-100); vertical-align:middle; color:var(--color-gray-700); }
+    .cust-table tbody tr:hover { background:var(--color-gray-50); cursor:pointer; }
+    .cust-table tbody tr:last-child td { border-bottom:none; }
+
+    /* ── Avatar ── */
+    .avatar { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.82rem; font-weight:700; flex-shrink:0; }
+
+    /* ── VIP crown ── */
+    .vip-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px; border-radius:var(--radius-full); font-size:0.7rem; font-weight:700; background:linear-gradient(135deg,#fef3c7,#fde68a); color:#92400e; border:1px solid #fcd34d; }
+
+    /* ── Visit bar ── */
+    .visit-bar-wrap { display:flex; align-items:center; gap:7px; }
+    .visit-bar { height:5px; background:var(--color-gray-200); border-radius:var(--radius-full); overflow:hidden; width:60px; flex-shrink:0; }
+    .visit-bar-fill { height:100%; border-radius:var(--radius-full); background:var(--color-primary); }
+
+    /* ── Allergy chips ── */
+    .allergy-chip { display:inline-flex; align-items:center; padding:2px 7px; border-radius:var(--radius-full); font-size:0.68rem; font-weight:700; background:#fff1f2; color:#be123c; border:1px solid #fecdd3; margin:1px; }
+
+    /* ── Note cell ── */
+    .note-cell { font-size:0.78rem; color:var(--color-gray-600); max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+    /* ── LINE badge ── */
+    .line-linked   { display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--radius-full);font-size:0.7rem;font-weight:700;background:#dcfce7;color:#166534; }
+    .line-unlinked { display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:var(--radius-full);font-size:0.7rem;font-weight:700;background:var(--color-gray-100);color:var(--color-gray-500); }
+
+    /* ── Slide panel ── */
+    .panel-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:150; }
+    .panel-overlay.active { display:block; }
+    .slide-panel { position:fixed; top:0; right:-520px; width:500px; height:100vh; background:#fff; z-index:160; box-shadow:-8px 0 40px rgba(0,0,0,.12); transition:right .3s ease; display:flex; flex-direction:column; }
+    .slide-panel.open { right:0; }
+    .panel-header { padding:16px 20px; border-bottom:1px solid var(--color-gray-200); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .panel-header h2 { font-size:0.95rem; font-weight:700; color:var(--color-gray-900); margin:0; }
+    .panel-close { width:32px; height:32px; border-radius:var(--radius-md); border:none; background:var(--color-gray-100); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-gray-600); font-size:18px; }
+    .panel-tabs { display:flex; border-bottom:1px solid var(--color-gray-200); flex-shrink:0; }
+    .panel-tab { padding:10px 18px; font-size:0.8rem; font-weight:600; color:var(--color-gray-500); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color var(--transition); }
+    .panel-tab.active { color:var(--color-primary); border-bottom-color:var(--color-primary); }
+    .panel-body { flex:1; overflow-y:auto; padding:20px; }
+    .panel-footer { padding:14px 20px; border-top:1px solid var(--color-gray-200); display:flex; gap:10px; flex-shrink:0; }
+
+    /* ── Visit history ── */
+    .visit-row { display:flex; align-items:flex-start; gap:12px; padding:10px 0; border-bottom:1px solid var(--color-gray-100); }
+    .visit-row:last-child { border-bottom:none; }
+    .visit-dot { width:10px; height:10px; border-radius:50%; background:var(--color-primary); flex-shrink:0; margin-top:4px; }
+    .visit-date { font-size:0.72rem; color:var(--color-gray-400); margin-bottom:2px; }
+    .visit-menu { font-size:0.8rem; color:var(--color-gray-700); }
+    .visit-amount { font-size:0.8rem; font-weight:700; color:var(--color-gray-900); margin-left:auto; white-space:nowrap; flex-shrink:0; }
+
+    /* ── Section head ── */
+    .sec-head { font-size:0.82rem; font-weight:700; color:var(--color-gray-700); padding-bottom:8px; border-bottom:1px solid var(--color-gray-100); margin-bottom:12px; }
+
+    /* ── Confirm / modal overlays ── */
+    .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:220; align-items:center; justify-content:center; }
+    .confirm-overlay.active { display:flex; }
+    .confirm-box { background:#fff; border-radius:var(--radius-xl); padding:28px 32px; max-width:380px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .confirm-box h3 { font-size:1rem; font-weight:700; margin-bottom:8px; }
+    .confirm-box p  { font-size:0.83rem; color:var(--color-gray-500); margin-bottom:20px; }
+    .confirm-box .actions { display:flex; gap:10px; justify-content:center; }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.active { display:flex; }
+    .modal-box { background:#fff; border-radius:var(--radius-xl); padding:28px 32px; max-width:400px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+
+    /* ── Bulk bar ── */
+    .bulk-bar { display:none; align-items:center; gap:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-md); padding:9px 14px; margin-bottom:12px; font-size:0.82rem; }
+    .bulk-bar.active { display:flex; }
+
+    /* ── Page header ── */
+    .page-header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+
+    /* ── Pagination ── */
+    .page-btn { width:32px; height:32px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600; border:1px solid var(--color-gray-200); background:var(--color-white); cursor:pointer; color:var(--color-gray-600); transition:background var(--transition); }
+    .page-btn:hover  { background:var(--color-gray-100); }
+    .page-btn.active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+    .page-btn:disabled { opacity:.4; cursor:default; }
+
+    /* ── KPI mini cards in panel ── */
+    .kpi-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:16px; }
+    .kpi-card { background:var(--color-gray-50); border:1px solid var(--color-gray-200); border-radius:var(--radius-md); padding:10px 12px; text-align:center; }
+    .kpi-val  { font-size:1.1rem; font-weight:800; color:var(--color-gray-900); }
+    .kpi-lbl  { font-size:0.68rem; color:var(--color-gray-500); margin-top:2px; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <div class="page-content">
+
+      <!-- Page header -->
+      <div class="page-header-row">
+        <div>
+          <nav class="breadcrumb">
+            <a href="index.html">ホーム</a>
+            <span class="breadcrumb-sep">›</span>
+            <span>マスタ管理</span>
+            <span class="breadcrumb-sep">›</span>
+            <span>顧客管理</span>
+          </nav>
+          <h1 class="page-title" style="margin-top:8px">👤 顧客管理</h1>
+          <p class="page-subtitle">顧客情報・来店履歴・アレルギー・特記事項を管理します。</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;margin-top:6px;flex-wrap:wrap">
+          <button class="btn btn-outline" onclick="openImport()">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            CSVインポート
+          </button>
+          <button class="btn btn-outline" onclick="showToast('CSVをエクスポートしました')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSV出力
+          </button>
+          <button class="btn btn-danger" onclick="openPanel()">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            顧客を追加
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-val">2,847</div>
+          <div class="stat-lbl">総顧客数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-success)">+423</div>
+          <div class="stat-lbl">今月の新規</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:#d97706">
+            <span style="font-size:0.9rem">👑</span> 128
+          </div>
+          <div class="stat-lbl">VIP顧客</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-primary)">68.2%</div>
+          <div class="stat-lbl">リピート率</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:#16a34a">1,920</div>
+          <div class="stat-lbl">LINE連携済み</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">¥2,220</div>
+          <div class="stat-lbl">平均客単価</div>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div class="filter-bar">
+        <div class="search-wrap">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" class="form-control" placeholder="氏名・電話番号・メールで検索">
+        </div>
+        <select class="form-control" style="min-width:120px">
+          <option>全ての顧客</option>
+          <option>VIPのみ</option>
+          <option>新規（1回）</option>
+          <option>リピーター（2〜9回）</option>
+          <option>常連（10回以上）</option>
+        </select>
+        <select class="form-control" style="min-width:120px">
+          <option>アレルギー</option>
+          <option>登録あり</option>
+          <option>登録なし</option>
+        </select>
+        <select class="form-control" style="min-width:120px">
+          <option>LINE連携</option>
+          <option>連携済み</option>
+          <option>未連携</option>
+        </select>
+        <select class="form-control" style="min-width:130px">
+          <option>並び順：来店回数</option>
+          <option>並び順：累計支出</option>
+          <option>並び順：最終来店日</option>
+          <option>並び順：登録日</option>
+        </select>
+      </div>
+
+      <!-- Bulk bar -->
+      <div class="bulk-bar" id="bulk-bar">
+        <span id="bulk-count" style="font-weight:700;color:var(--color-primary)">0件</span> 選択中
+        <button class="btn btn-sm btn-secondary" onclick="showToast('VIPラベルを付与しました')">VIP設定</button>
+        <button class="btn btn-sm btn-secondary" onclick="showToast('タグを追加しました')">タグ追加</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626" onclick="showToast('削除しました')">削除</button>
+        <button class="btn btn-sm btn-ghost" onclick="clearSelection()" style="margin-left:auto">選択解除</button>
+      </div>
+
+      <!-- Table -->
+      <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+        <table class="cust-table" id="cust-table">
+          <thead>
+            <tr>
+              <th style="width:36px"><input type="checkbox" id="check-all" onchange="selectAll(this)"></th>
+              <th style="width:44px"></th>
+              <th>顧客</th>
+              <th style="width:130px">電話番号</th>
+              <th style="width:110px">来店回数</th>
+              <th style="width:110px">累計支出</th>
+              <th style="width:90px">最終来店</th>
+              <th style="width:110px">アレルギー</th>
+              <th>特記事項</th>
+              <th style="width:120px">LINE</th>
+              <th style="width:80px">操作</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- VIP 山田花子 (最多) -->
+            <tr onclick="openPanel('C004')">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td><div class="avatar" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e">山</div></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:7px">
+                  <div>
+                    <div style="font-weight:700;color:var(--color-gray-900)">山田 花子</div>
+                    <div style="font-size:0.7rem;color:var(--color-gray-400)">#C004 · yamada@email.com</div>
+                  </div>
+                  <span class="vip-badge">👑 VIP</span>
+                </div>
+              </td>
+              <td style="font-size:0.8rem">03-XXXX-1111</td>
+              <td>
+                <div class="visit-bar-wrap">
+                  <span style="font-weight:700;color:var(--color-gray-900);min-width:28px">25回</span>
+                  <div class="visit-bar"><div class="visit-bar-fill" style="width:100%"></div></div>
+                </div>
+              </td>
+              <td style="font-weight:700;color:var(--color-gray-900)">¥350,000</td>
+              <td style="font-size:0.78rem;color:var(--color-gray-500)">2026/03/28</td>
+              <td><span style="font-size:0.75rem;color:var(--color-gray-400)">—</span></td>
+              <td class="note-cell">常に窓際の席を希望</td>
+              <td><span class="line-linked"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>連携済み</span></td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C004')">詳細</button>
+              </td>
+            </tr>
+
+            <!-- VIP 田中太郎 -->
+            <tr onclick="openPanel('C001')">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td><div class="avatar" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e">田</div></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:7px">
+                  <div>
+                    <div style="font-weight:700;color:var(--color-gray-900)">田中 太郎</div>
+                    <div style="font-size:0.7rem;color:var(--color-gray-400)">#C001 · tanaka@email.com</div>
+                  </div>
+                  <span class="vip-badge">👑 VIP</span>
+                </div>
+              </td>
+              <td style="font-size:0.8rem">090-XXXX-5678</td>
+              <td>
+                <div class="visit-bar-wrap">
+                  <span style="font-weight:700;color:var(--color-gray-900);min-width:28px">15回</span>
+                  <div class="visit-bar"><div class="visit-bar-fill" style="width:60%"></div></div>
+                </div>
+              </td>
+              <td style="font-weight:700;color:var(--color-gray-900)">¥185,000</td>
+              <td style="font-size:0.78rem;color:var(--color-gray-500)">2026/03/25</td>
+              <td><span style="font-size:0.75rem;color:var(--color-gray-400)">—</span></td>
+              <td class="note-cell">🎂 誕生日登録済み</td>
+              <td><span class="line-linked"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>連携済み</span></td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C001')">詳細</button>
+              </td>
+            </tr>
+
+            <!-- リピーター えびアレルギー -->
+            <tr onclick="openPanel('C002')">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td><div class="avatar" style="background:#fce7f3;color:#9d174d">佐</div></td>
+              <td>
+                <div>
+                  <div style="font-weight:700;color:var(--color-gray-900)">佐藤 舞</div>
+                  <div style="font-size:0.7rem;color:var(--color-gray-400)">#C002 · sato@email.com</div>
+                </div>
+              </td>
+              <td style="font-size:0.8rem">090-XXXX-4321</td>
+              <td>
+                <div class="visit-bar-wrap">
+                  <span style="font-weight:700;color:var(--color-gray-900);min-width:28px">5回</span>
+                  <div class="visit-bar"><div class="visit-bar-fill" style="width:20%"></div></div>
+                </div>
+              </td>
+              <td style="font-weight:700;color:var(--color-gray-900)">¥45,000</td>
+              <td style="font-size:0.78rem;color:var(--color-gray-500)">2026/03/20</td>
+              <td><span class="allergy-chip">🍤 えび</span></td>
+              <td class="note-cell">えびアレルギーに注意</td>
+              <td><span class="line-linked"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>連携済み</span></td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C002')">詳細</button>
+              </td>
+            </tr>
+
+            <!-- 新規 記念日 -->
+            <tr onclick="openPanel('C003')">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td><div class="avatar" style="background:#dbeafe;color:#1e40af">高</div></td>
+              <td>
+                <div>
+                  <div style="font-weight:700;color:var(--color-gray-900)">高橋 健太</div>
+                  <div style="font-size:0.7rem;color:var(--color-gray-400)">#C003 · takahashi@email.com</div>
+                </div>
+              </td>
+              <td style="font-size:0.8rem">080-XXXX-9999</td>
+              <td>
+                <div class="visit-bar-wrap">
+                  <span style="font-weight:700;color:var(--color-gray-500);min-width:28px">1回</span>
+                  <div class="visit-bar"><div class="visit-bar-fill" style="width:4%"></div></div>
+                </div>
+              </td>
+              <td style="font-weight:700;color:var(--color-gray-700)">¥3,200</td>
+              <td style="font-size:0.78rem;color:var(--color-gray-500)">2026/01/15</td>
+              <td><span style="font-size:0.75rem;color:var(--color-gray-400)">—</span></td>
+              <td class="note-cell">💍 記念日登録（1/15）</td>
+              <td><span class="line-unlinked"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>未連携</span></td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C003')">詳細</button>
+              </td>
+            </tr>
+
+            <!-- アレルギー複数 -->
+            <tr onclick="openPanel('C005')">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td><div class="avatar" style="background:#d1fae5;color:#065f46">木</div></td>
+              <td>
+                <div>
+                  <div style="font-weight:700;color:var(--color-gray-900)">木村 さやか</div>
+                  <div style="font-size:0.7rem;color:var(--color-gray-400)">#C005 · kimura@email.com</div>
+                </div>
+              </td>
+              <td style="font-size:0.8rem">070-XXXX-2222</td>
+              <td>
+                <div class="visit-bar-wrap">
+                  <span style="font-weight:700;color:var(--color-gray-900);min-width:28px">8回</span>
+                  <div class="visit-bar"><div class="visit-bar-fill" style="width:32%"></div></div>
+                </div>
+              </td>
+              <td style="font-weight:700;color:var(--color-gray-900)">¥72,000</td>
+              <td style="font-size:0.78rem;color:var(--color-gray-500)">2026/03/30</td>
+              <td>
+                <span class="allergy-chip">🥚 卵</span>
+                <span class="allergy-chip">🥛 乳</span>
+              </td>
+              <td class="note-cell">ベジタリアン希望</td>
+              <td><span class="line-linked"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>連携済み</span></td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C005')">詳細</button>
+              </td>
+            </tr>
+
+            <!-- VIP 常連 -->
+            <tr onclick="openPanel('C006')">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td><div class="avatar" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e">中</div></td>
+              <td>
+                <div style="display:flex;align-items:center;gap:7px">
+                  <div>
+                    <div style="font-weight:700;color:var(--color-gray-900)">中島 浩二</div>
+                    <div style="font-size:0.7rem;color:var(--color-gray-400)">#C006 · nakajima@email.com</div>
+                  </div>
+                  <span class="vip-badge">👑 VIP</span>
+                </div>
+              </td>
+              <td style="font-size:0.8rem">090-XXXX-3333</td>
+              <td>
+                <div class="visit-bar-wrap">
+                  <span style="font-weight:700;color:var(--color-gray-900);min-width:28px">20回</span>
+                  <div class="visit-bar"><div class="visit-bar-fill" style="width:80%"></div></div>
+                </div>
+              </td>
+              <td style="font-weight:700;color:var(--color-gray-900)">¥240,000</td>
+              <td style="font-size:0.78rem;color:var(--color-gray-500)">2026/04/01</td>
+              <td><span style="font-size:0.75rem;color:var(--color-gray-400)">—</span></td>
+              <td class="note-cell">毎週金曜19時に来店</td>
+              <td><span class="line-linked"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>連携済み</span></td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C006')">詳細</button>
+              </td>
+            </tr>
+
+            <!-- 新規 -->
+            <tr onclick="openPanel('C007')">
+              <td onclick="event.stopPropagation()"><input type="checkbox" class="row-check" onchange="updateBulk()"></td>
+              <td><div class="avatar" style="background:#ede9fe;color:#5b21b6">松</div></td>
+              <td>
+                <div>
+                  <div style="font-weight:700;color:var(--color-gray-900)">松本 陽子</div>
+                  <div style="font-size:0.7rem;color:var(--color-gray-400)">#C007 · matsumoto@email.com</div>
+                </div>
+              </td>
+              <td style="font-size:0.8rem">080-XXXX-4444</td>
+              <td>
+                <div class="visit-bar-wrap">
+                  <span style="font-weight:700;color:var(--color-gray-500);min-width:28px">2回</span>
+                  <div class="visit-bar"><div class="visit-bar-fill" style="width:8%"></div></div>
+                </div>
+              </td>
+              <td style="font-weight:700;color:var(--color-gray-700)">¥8,500</td>
+              <td style="font-size:0.78rem;color:var(--color-gray-500)">2026/03/15</td>
+              <td><span class="allergy-chip">🌾 小麦</span></td>
+              <td class="note-cell">グルテンフリー対応希望</td>
+              <td><span class="line-unlinked"><svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>未連携</span></td>
+              <td onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('C007')">詳細</button>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;flex-wrap:wrap;gap:10px">
+        <span style="font-size:0.8rem;color:var(--color-gray-500)">7件表示 / 全2,847件</span>
+        <div style="display:flex;gap:4px">
+          <button class="page-btn" disabled>‹</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <span style="font-size:0.8rem;color:var(--color-gray-400);padding:0 4px;display:flex;align-items:center">…</span>
+          <button class="page-btn">285</button>
+          <button class="page-btn">›</button>
+        </div>
+        <select class="form-control" style="width:auto;font-size:0.78rem">
+          <option>10件/ページ</option>
+          <option>20件/ページ</option>
+          <option>50件/ページ</option>
+        </select>
+      </div>
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+
+<!-- ══════════ SLIDE PANEL — 顧客詳細 ══════════ -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+<div class="slide-panel" id="slide-panel">
+  <div class="panel-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="avatar" style="background:linear-gradient(135deg,#fef3c7,#fde68a);color:#92400e;width:40px;height:40px">田</div>
+      <div>
+        <h2 id="panel-title" style="margin:0">田中 太郎</h2>
+        <div style="font-size:0.72rem;color:var(--color-gray-400)">#C001 · VIPメンバー</div>
+      </div>
+    </div>
+    <button class="panel-close" onclick="closePanel()">×</button>
+  </div>
+
+  <!-- Panel tabs -->
+  <div class="panel-tabs">
+    <button class="panel-tab active" onclick="switchPanelTab(this,'tab-info')">基本情報</button>
+    <button class="panel-tab" onclick="switchPanelTab(this,'tab-history')">来店履歴</button>
+    <button class="panel-tab" onclick="switchPanelTab(this,'tab-pref')">好み・特記</button>
+  </div>
+
+  <div class="panel-body">
+
+    <!-- TAB: 基本情報 -->
+    <div id="tab-info">
+
+      <!-- KPI mini -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-val">15回</div>
+          <div class="kpi-lbl">来店回数</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">¥185,000</div>
+          <div class="kpi-lbl">累計支出</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-val">¥12,333</div>
+          <div class="kpi-lbl">平均単価</div>
+        </div>
+      </div>
+
+      <div class="sec-head">連絡先</div>
+      <div class="grid grid-2" style="gap:12px;margin-bottom:14px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">姓</label>
+          <input type="text" class="form-control" value="田中">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">名</label>
+          <input type="text" class="form-control" value="太郎">
+        </div>
+      </div>
+      <div class="grid grid-2" style="gap:12px;margin-bottom:14px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">電話番号</label>
+          <input type="tel" class="form-control" value="090-XXXX-5678">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">メール</label>
+          <input type="email" class="form-control" value="tanaka@email.com">
+        </div>
+      </div>
+
+      <div class="sec-head" style="margin-top:18px">記念日・誕生日</div>
+      <div class="grid grid-2" style="gap:12px;margin-bottom:14px">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">🎂 誕生日</label>
+          <input type="date" class="form-control" value="1985-06-15">
+        </div>
+        <div class="form-group" style="margin:0">
+          <label class="form-label">💍 記念日</label>
+          <input type="date" class="form-control" placeholder="未登録">
+        </div>
+      </div>
+
+      <div class="sec-head" style="margin-top:18px">LINE連携</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-md)">
+        <div style="font-size:0.82rem;color:#166534;font-weight:600">✅ LINE連携済み</div>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626" onclick="showToast('LINE連携を解除しました')">解除</button>
+      </div>
+
+      <div class="sec-head" style="margin-top:18px">VIPステータス</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:linear-gradient(135deg,#fffbeb,#fef9c3);border:1px solid #fcd34d;border-radius:var(--radius-md)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.2rem">👑</span>
+          <div>
+            <div style="font-size:0.82rem;font-weight:700;color:#92400e">VIP顧客</div>
+            <div style="font-size:0.7rem;color:#a16207">累計¥150,000以上の常連顧客</div>
+          </div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+      </div>
+
+    </div><!-- /tab-info -->
+
+    <!-- TAB: 来店履歴 -->
+    <div id="tab-history" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:0.82rem;color:var(--color-gray-600)">直近の来店履歴</div>
+        <span class="badge badge-blue">全15回</span>
+      </div>
+
+      <div id="visit-list">
+        <div class="visit-row">
+          <div class="visit-dot"></div>
+          <div style="flex:1">
+            <div class="visit-date">2026/03/25（火）19:30 — テーブルA-02</div>
+            <div class="visit-menu">とんこつラーメン × 2、生ビール × 3、ティラミス</div>
+          </div>
+          <div class="visit-amount">¥6,800</div>
+        </div>
+        <div class="visit-row">
+          <div class="visit-dot" style="background:var(--color-gray-300)"></div>
+          <div style="flex:1">
+            <div class="visit-date">2026/03/10（月）12:15 — テーブルB-01</div>
+            <div class="visit-menu">ランチセットA × 2、コーヒー × 2</div>
+          </div>
+          <div class="visit-amount">¥3,200</div>
+        </div>
+        <div class="visit-row">
+          <div class="visit-dot" style="background:var(--color-gray-300)"></div>
+          <div style="flex:1">
+            <div class="visit-date">2026/02/28（金）20:00 — 個室1</div>
+            <div class="visit-menu">プレミアムディナーコース × 4名</div>
+          </div>
+          <div class="visit-amount">¥22,000</div>
+        </div>
+        <div class="visit-row">
+          <div class="visit-dot" style="background:var(--color-gray-300)"></div>
+          <div style="flex:1">
+            <div class="visit-date">2026/02/14（土）19:00 — 個室2</div>
+            <div class="visit-menu">プレミアムディナーコース × 2名、ワイン × 1本</div>
+          </div>
+          <div class="visit-amount">¥18,500</div>
+        </div>
+        <div class="visit-row">
+          <div class="visit-dot" style="background:var(--color-gray-300)"></div>
+          <div style="flex:1">
+            <div class="visit-date">2026/01/20（月）18:30 — テーブルA-01</div>
+            <div class="visit-menu">焼き鳥セット × 2、飲み放題コース × 2名</div>
+          </div>
+          <div class="visit-amount">¥7,600</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="showToast('全履歴を表示します')">さらに表示（全15件）</button>
+    </div><!-- /tab-history -->
+
+    <!-- TAB: 好み・特記 -->
+    <div id="tab-pref" style="display:none">
+
+      <div class="sec-head">アレルギー</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🥚 卵</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🥛 乳</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🌾 小麦</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🍤 えび</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🦀 かに</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🥜 落花生</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🐷 豚肉</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">🥩 牛肉</label>
+      </div>
+
+      <div class="sec-head">座席の好み</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-primary);background:#eff6ff;border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox" checked>窓際</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">個室</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">禁煙席</label>
+        <label style="display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid var(--color-gray-200);border-radius:var(--radius-full);font-size:0.78rem;cursor:pointer"><input type="checkbox">カウンター</label>
+      </div>
+
+      <div class="sec-head">特記事項・メモ</div>
+      <textarea class="form-control" rows="3" style="margin-bottom:14px">常に窓際の席を希望。誕生日（6/15）にLINEでクーポンを送る。</textarea>
+
+      <div class="sec-head">よく注文するメニュー（AI分析）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">
+        <span class="badge badge-blue">とんこつラーメン</span>
+        <span class="badge badge-blue">生ビール</span>
+        <span class="badge badge-gray">焼き鳥セット</span>
+        <span class="badge badge-gray">ティラミス</span>
+        <span class="badge badge-gray">プレミアムコース</span>
+      </div>
+      <div style="font-size:0.72rem;color:var(--color-gray-400);margin-top:6px">※ AIが過去の注文履歴から自動生成</div>
+
+    </div><!-- /tab-pref -->
+
+  </div>
+  <div class="panel-footer">
+    <button class="btn btn-secondary" style="flex:1" onclick="closePanel()">閉じる</button>
+    <button class="btn btn-primary" style="flex:2" onclick="saveCustomer()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      変更を保存
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════ IMPORT MODAL ══════════ -->
+<div class="modal-overlay" id="import-modal" onclick="closeImport()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <h3 style="font-size:1rem;font-weight:700;margin-bottom:6px">CSVインポート</h3>
+    <p style="font-size:0.82rem;color:var(--color-gray-500);margin-bottom:16px">CSVファイルから顧客データを一括インポートします。</p>
+
+    <div style="border:2px dashed var(--color-gray-300);border-radius:var(--radius-lg);padding:30px 20px;text-align:center;cursor:pointer;margin-bottom:14px" onclick="showToast('ファイルを選択します')">
+      <svg width="32" height="32" fill="none" stroke="var(--color-gray-400)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="font-size:0.83rem;font-weight:600;color:var(--color-gray-600)">クリックしてCSVファイルを選択</div>
+      <div style="font-size:0.72rem;color:var(--color-gray-400);margin-top:4px">対応フォーマット：UTF-8 CSV</div>
+    </div>
+
+    <div style="background:var(--color-gray-50);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:16px;font-size:0.78rem;color:var(--color-gray-600)">
+      <div style="font-weight:700;margin-bottom:4px">CSVフォーマット（必須列）</div>
+      <div style="font-family:monospace;font-size:0.72rem;color:var(--color-primary)">氏名, 電話番号, メール, アレルギー, 特記事項</div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeImport()">キャンセル</button>
+      <button class="btn btn-outline btn-sm" onclick="showToast('テンプレートをダウンロードしました')">テンプレDL</button>
+      <button class="btn btn-primary" style="flex:1" onclick="showToast('インポートを開始します');closeImport()">インポート開始</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════ DELETE CONFIRM ══════════ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div style="width:48px;height:48px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <svg width="22" height="22" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+    </div>
+    <h3>顧客を削除しますか？</h3>
+    <p id="confirm-name" style="font-weight:700;color:var(--color-gray-800);margin-bottom:6px"></p>
+    <p>来店履歴・ポイント・連携データも全て削除されます。</p>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">キャンセル</button>
+      <button class="btn" style="background:#dc2626;color:#fff" onclick="executeDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">保存しました</span>
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'customer' });
+
+  /* ── Select all ── */
+  function selectAll(master) {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = master.checked);
+    updateBulk();
+  }
+  function updateBulk() {
+    const n = document.querySelectorAll('.row-check:checked').length;
+    document.getElementById('bulk-bar').classList.toggle('active', n > 0);
+    document.getElementById('bulk-count').textContent = n + '件';
+  }
+  function clearSelection() {
+    document.querySelectorAll('.row-check, #check-all').forEach(c => c.checked = false);
+    updateBulk();
+  }
+
+  /* ── Slide panel ── */
+  function openPanel(id) {
+    document.getElementById('panel-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    // Reset to first tab
+    switchPanelTab(document.querySelector('.panel-tab'), 'tab-info');
+  }
+  function closePanel() {
+    document.getElementById('panel-overlay').classList.remove('active');
+    document.getElementById('slide-panel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function saveCustomer() {
+    closePanel();
+    showToast('顧客情報を保存しました');
+  }
+
+  /* ── Panel tabs ── */
+  function switchPanelTab(btn, id) {
+    document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ['tab-info','tab-history','tab-pref'].forEach(t => {
+      document.getElementById(t).style.display = (t === id) ? '' : 'none';
+    });
+  }
+
+  /* ── Import modal ── */
+  function openImport() {
+    document.getElementById('import-modal').classList.add('active');
+  }
+  function closeImport() {
+    document.getElementById('import-modal').classList.remove('active');
+  }
+
+  /* ── Delete confirm ── */
+  let _deleteTarget = null;
+  function confirmDelete(name) {
+    _deleteTarget = name;
+    document.getElementById('confirm-name').textContent = '「' + name + '」';
+    document.getElementById('confirm-overlay').classList.add('active');
+  }
+  function closeConfirm() {
+    document.getElementById('confirm-overlay').classList.remove('active');
+  }
+  function executeDelete() {
+    closeConfirm();
+    showToast('削除しました');
+  }
+  document.getElementById('confirm-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeConfirm();
+  });
+
+  /* ── Toast ── */
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.style.display = 'flex';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+</script>
+</body>
+</html>

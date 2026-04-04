@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>おすすめエンジン設定 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Section card ── */
+    .section-card { background:var(--color-white); border:1px solid var(--color-gray-200); border-radius:var(--radius-xl); margin-bottom:16px; box-shadow:var(--shadow-sm); overflow:hidden; }
+    .section-card-header { display:flex; align-items:center; gap:10px; padding:13px 18px; border-bottom:1px solid var(--color-gray-100); background:var(--color-gray-50); }
+    .section-card-title  { font-size:0.88rem; font-weight:700; color:var(--color-gray-900); }
+    .section-card-body   { padding:20px 22px; }
+
+    /* ── Info box ── */
+    .info-box { border-radius:var(--radius-md); padding:11px 14px; font-size:0.78rem; line-height:1.6; margin-bottom:10px; }
+    .info-box.green  { background:#ecfdf5; border-left:3px solid #10b981; color:#065f46; }
+    .info-box.orange { background:#fff7ed; border-left:3px solid #f97316; color:#9a3412; }
+    .info-box.pink   { background:#fdf2f8; border-left:3px solid #ec4899; color:#831843; }
+    .info-box.blue   { background:#eff6ff; border-left:3px solid #3b82f6; color:#1e40af; }
+    .info-box ul     { padding-left:16px; list-style:disc; margin-top:5px; display:flex; flex-direction:column; gap:3px; }
+    .info-box strong { font-weight:700; }
+
+    /* ── Tag priority ── */
+    .tag-priority { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .tag-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; background:var(--color-primary); color:#fff; border-radius:var(--radius-full); font-size:0.8rem; font-weight:700; cursor:grab; user-select:none; }
+    .tag-pill:active { cursor:grabbing; opacity:.8; }
+    .tag-arrow { color:var(--color-gray-300); font-size:1rem; }
+
+    /* ── Slider ── */
+    input[type=range] { width:100%; accent-color:var(--color-primary); height:5px; }
+
+    /* ── Sticky bar ── */
+    .sticky-bar { position:sticky; top:var(--header-height); z-index:30; background:var(--color-white); border-bottom:1px solid var(--color-gray-200); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .step-dot { width:8px; height:8px; border-radius:50%; background:var(--color-gray-200); }
+    .step-dot.active { background:var(--color-primary); width:20px; border-radius:4px; }
+    .step-dot.done   { background:var(--color-success); }
+
+    /* ── Sub-section box ── */
+    .sub-box { background:var(--color-gray-50); border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:16px; display:flex; flex-direction:column; gap:16px; }
+
+    /* ── Tag group header ── */
+    .field-group { margin-bottom:20px; }
+    .field-group:last-child { margin-bottom:0; }
+    .field-label { font-size:0.87rem; font-weight:600; color:var(--color-gray-800); margin-bottom:6px; }
+    .field-hint  { font-size:0.77rem; color:var(--color-gray-500); margin-top:3px; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky action bar -->
+    <div class="sticky-bar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <nav class="breadcrumb" style="margin:0">
+          <a href="index.html">ホーム</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>店舗設定</span>
+          <span class="breadcrumb-sep">›</span>
+          <a href="A1_011.html">AI・自動化設定</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>おすすめエンジン設定</span>
+        </nav>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot active"></div>
+          <div class="step-dot"></div>
+        </div>
+        <span style="font-size:0.72rem;color:var(--color-gray-500)">Step 5 / 6</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <a href="A1_011.html" class="btn btn-secondary">← AI設定へ戻る</a>
+        <button class="btn btn-primary" onclick="handleSave()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          保存する
+        </button>
+        <a href="A1_015.html" class="btn btn-outline">次のステップ <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Page heading -->
+      <div style="margin-bottom:24px">
+        <h1 class="page-title">😊 おすすめエンジン設定</h1>
+        <p class="page-subtitle">AIがメニューを推薦する際のタグ優先順位・店舗状態別ルール・パーソナライズ・在庫連動・天気調整などを設定します。</p>
+      </div>
+
+      <!-- ① タグ優先順位 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🏷️</span>
+          <span class="section-card-title">タグ優先順位</span>
+        </div>
+        <div class="section-card-body">
+          <p class="form-hint" style="margin-bottom:14px">ドラッグ＆ドロップで推薦タグの優先順位を並び替えられます。</p>
+          <div class="tag-priority" id="tag-priority">
+            <div class="tag-pill" draggable="true">① おすすめ</div>
+            <span class="tag-arrow">→</span>
+            <div class="tag-pill" draggable="true" style="background:#8b5cf6">② 人気</div>
+            <span class="tag-arrow">→</span>
+            <div class="tag-pill" draggable="true" style="background:#10b981">③ 早出し</div>
+            <span class="tag-arrow">→</span>
+            <div class="tag-pill" draggable="true" style="background:#f59e0b">④ カスタマイズ可</div>
+          </div>
+          <div class="info-box blue" style="margin-top:14px">
+            <strong>💡 ポイント：</strong>優先度の高いタグが付いたメニューが先に推薦されます。同一タグが複数メニューに付いている場合は、おすすめエンジンスコアで順位を決定します。
+          </div>
+        </div>
+      </div>
+
+      <!-- ② 店舗状態別レコメンドルール -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🏪</span>
+          <span class="section-card-title">店舗状態別レコメンドルール</span>
+        </div>
+        <div class="section-card-body">
+          <p class="form-hint" style="margin-bottom:14px">店舗状態ごとのメニュー推薦ルールを設定します。状態はダッシュボード / POS画面から切り替えられます。</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="info-box green">
+              <strong>🟢 通常モード</strong><br>
+              全てのメニューから通常どおり推薦する
+            </div>
+            <div class="info-box orange">
+              <strong>🟠 混雑モード</strong>
+              <ul>
+                <li>提供時間カテゴリ「短い」「普通」のメニューを優先</li>
+                <li>メニューの「混雑時は推薦しない」フラグがONのものは除外</li>
+              </ul>
+            </div>
+            <div class="info-box pink">
+              <strong>🔴 ラストオーダーモード</strong>
+              <ul>
+                <li>ドリンク＋提供時間カテゴリ「短い」のメニューのみが推薦対象</li>
+                <li>カスタマイズの変更数は1件までに制限</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ③ パーソナライズ設定 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">👤</span>
+          <span class="section-card-title">パーソナライズ設定（顧客履歴）</span>
+        </div>
+        <div class="section-card-body">
+          <p class="form-hint" style="margin-bottom:16px">過去の注文履歴に基づいて、どの程度パーソナライズするかを設定します。</p>
+
+          <div class="sub-box">
+
+            <!-- 再注文優先度 -->
+            <div class="field-group">
+              <div class="field-label">■ 再注文メニューの優先度</div>
+              <p class="field-hint">過去に注文したことがあるメニューの推薦優先度を調整します。</p>
+              <div style="display:flex;align-items:center;gap:12px;margin:12px 0 6px">
+                <span style="font-size:0.72rem;color:var(--color-gray-400)">0%</span>
+                <input type="range" min="0" max="100" value="70" id="reorder-slider"
+                       oninput="document.getElementById('reorder-val').textContent=this.value+'%'"
+                       style="flex:1">
+                <span style="font-size:0.72rem;color:var(--color-gray-400)">100%</span>
+                <span id="reorder-val" style="font-size:1.1rem;font-weight:800;color:var(--color-primary);min-width:52px;text-align:right">70%</span>
+              </div>
+              <p class="field-hint"><strong>70%</strong> の割合で優先推薦し、残り <strong>30%</strong> は新規・未注文メニューから推薦します。</p>
+            </div>
+
+            <!-- 連続推薦制限 -->
+            <div class="field-group">
+              <div class="field-label">■ 同一メニューの連続推薦制限</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+                <span style="font-size:0.8rem;color:var(--color-gray-700)">過去</span>
+                <input type="number" class="form-control" value="7" style="width:65px">
+                <span style="font-size:0.8rem;color:var(--color-gray-700)">日以内に注文済みのメニューは</span>
+              </div>
+              <div style="display:flex;gap:20px;flex-wrap:wrap">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="repeat-rule" style="accent-color:var(--color-primary)"> 推薦しない
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="repeat-rule" checked style="accent-color:var(--color-primary)"> 推薦頻度を下げる（おすすめのみ）
+                </label>
+              </div>
+            </div>
+
+            <!-- NGメニュー -->
+            <div class="field-group" style="margin-bottom:0">
+              <div class="field-label">■ NGメニュー・NGタグ</div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;cursor:pointer;margin-top:6px">
+                <input type="checkbox" checked style="accent-color:var(--color-primary)">
+                顧客がNGと登録したメニュー／タグは推薦対象から除外する
+              </label>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ④ 在庫連動レコメンド -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">📦</span>
+          <span class="section-card-title">在庫連動レコメンド</span>
+        </div>
+        <div class="section-card-body">
+          <div class="sub-box">
+
+            <!-- 売り切れメニュー -->
+            <div class="field-group">
+              <div class="field-label">■ 売り切れメニュー（在庫 = 0）</div>
+              <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px">
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="soldout-rule" checked style="accent-color:var(--color-primary)"> 推薦しない
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="soldout-rule" style="accent-color:var(--color-primary)"> 注文メッセージ付きで推薦を許可する（実験的）
+                </label>
+              </div>
+            </div>
+
+            <!-- 在庫過多優先度 -->
+            <div class="field-group">
+              <div class="field-label">■ 在庫過多メニューの推薦優先度</div>
+              <p class="field-hint">「在庫過多」とみなされたメニューの推薦強度を調整します。</p>
+              <div style="display:flex;align-items:center;gap:12px;margin:12px 0 6px">
+                <span style="font-size:0.72rem;color:var(--color-gray-400)">0</span>
+                <input type="range" min="0" max="100" value="50" id="overstock-slider"
+                       oninput="document.getElementById('overstock-val').textContent=this.value"
+                       style="flex:1">
+                <span style="font-size:0.72rem;color:var(--color-gray-400)">100</span>
+                <span id="overstock-val" style="font-size:1.1rem;font-weight:800;color:var(--color-primary);min-width:36px;text-align:right">50</span>
+              </div>
+              <p class="field-hint">0：通常どおり推薦 ／ 100：積極的に優先推薦</p>
+            </div>
+
+            <!-- 在庫過多判定 -->
+            <div class="field-group" style="margin-bottom:0">
+              <div class="field-label">■ 在庫過多の判定方法</div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;cursor:pointer;margin-top:8px;margin-bottom:10px">
+                <input type="checkbox" style="accent-color:var(--color-primary)">「在庫過多」フラグをメニューごとに手動設定する
+              </label>
+              <div style="font-size:0.78rem;color:var(--color-gray-500);margin-bottom:8px">または、自動判定：</div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font-size:0.8rem;color:var(--color-gray-700)">在庫数が</span>
+                <input type="number" class="form-control" value="50" style="width:70px">
+                <span style="font-size:0.8rem;color:var(--color-gray-700)">食以上の場合に自動で「在庫過多」とみなす</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑤ 天気による調整 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🌤️</span>
+          <span class="section-card-title">天気によるメニュー推薦の調整</span>
+        </div>
+        <div class="section-card-body">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+            <div style="flex:1">
+              <p style="font-size:0.82rem;color:var(--color-gray-700);margin-bottom:8px">ONにすると、現在の天気情報をもとにAIメニュー推薦を自動調整します。</p>
+              <div style="font-size:0.78rem;color:var(--color-gray-500);line-height:1.7">
+                例）寒い日 → 温かい飲み物・さっぱり系メニューを優先<br>
+                雨の日 → 温かい和食・スープ系メニューを優先
+              </div>
+            </div>
+            <label class="toggle" style="flex-shrink:0;margin-top:4px">
+              <input type="checkbox" checked>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ⑥ 表示件数 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">📊</span>
+          <span class="section-card-title">AIおすすめ 表示件数</span>
+        </div>
+        <div class="section-card-body">
+          <p class="form-hint" style="margin-bottom:14px">1回のAI推薦で表示するメニューの件数を選択します。</p>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <label style="display:flex;align-items:center;gap:10px;font-size:0.82rem;cursor:pointer;padding:10px 14px;border:1px solid var(--color-gray-200);border-radius:var(--radius-md);background:var(--color-white)" id="cnt-3">
+              <input type="radio" name="display-count" checked style="accent-color:var(--color-primary)" onchange="highlightCount()">
+              <div>
+                <div style="font-weight:600">3品</div>
+                <div style="font-size:0.73rem;color:var(--color-gray-500)">シンプル表示・迷わせない</div>
+              </div>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:0.82rem;cursor:pointer;padding:10px 14px;border:1px solid var(--color-gray-200);border-radius:var(--radius-md);background:var(--color-white)" id="cnt-5">
+              <input type="radio" name="display-count" style="accent-color:var(--color-primary)" onchange="highlightCount()">
+              <div>
+                <div style="font-weight:600">5品 <span class="badge badge-green" style="font-size:0.65rem;margin-left:4px">標準</span></div>
+                <div style="font-size:0.73rem;color:var(--color-gray-500)">バランスの取れた表示数</div>
+              </div>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:0.82rem;cursor:pointer;padding:10px 14px;border:1px solid var(--color-gray-200);border-radius:var(--radius-md);background:var(--color-white)" id="cnt-8">
+              <input type="radio" name="display-count" style="accent-color:var(--color-primary)" onchange="highlightCount()">
+              <div>
+                <div style="font-weight:600">8品</div>
+                <div style="font-size:0.73rem;color:var(--color-gray-500)">多くの選択肢を提示する</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;">
+        <a href="A1_011.html" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          AI・自動化設定へ戻る
+        </a>
+        <a href="A1_015.html" class="btn btn-primary">
+          次のステップ: デバイス連携設定
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="
+  position:fixed; bottom:24px; right:24px; z-index:999;
+  background:#10b981; color:#fff; padding:12px 20px; border-radius:10px;
+  font-size:0.85rem; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.15);
+  display:none; align-items:center; gap:8px;
+">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  設定を保存しました
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'ai-setting' });
+
+  /* ── Save toast ── */
+  function handleSave() {
+    const toast = document.getElementById('toast');
+    toast.style.display = 'flex';
+    setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+
+  /* ── Tag drag-and-drop reorder ── */
+  (function () {
+    const container = document.getElementById('tag-priority');
+    let dragged = null;
+
+    container.addEventListener('dragstart', e => {
+      if (!e.target.classList.contains('tag-pill')) return;
+      dragged = e.target;
+      e.target.style.opacity = '0.5';
+    });
+    container.addEventListener('dragend', e => {
+      if (e.target.classList.contains('tag-pill')) e.target.style.opacity = '';
+    });
+    container.addEventListener('dragover', e => e.preventDefault());
+    container.addEventListener('drop', e => {
+      e.preventDefault();
+      if (!dragged) return;
+      const target = e.target.closest('.tag-pill');
+      if (!target || target === dragged) return;
+      // swap positions including the adjacent arrows
+      const pills = [...container.querySelectorAll('.tag-pill')];
+      const arrows = [...container.querySelectorAll('.tag-arrow')];
+      const di = pills.indexOf(dragged);
+      const ti = pills.indexOf(target);
+      if (di === -1 || ti === -1) return;
+      [pills[di], pills[ti]] = [pills[ti], pills[di]];
+      // rebuild order labels
+      pills.forEach((p, i) => {
+        const label = p.textContent.replace(/^[①②③④⑤]\s*/, '');
+        p.textContent = ['①','②','③','④','⑤'][i] + ' ' + label;
+      });
+      // re-insert children in order
+      const children = [];
+      pills.forEach((p, i) => { children.push(p); if (arrows[i]) children.push(arrows[i]); });
+      children.forEach(c => container.appendChild(c));
+      dragged = null;
+    });
+  })();
+</script>
+</body>
+</html>

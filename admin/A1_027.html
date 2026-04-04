@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>シフト管理 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Tab bar ── */
+    .tab-bar { display:flex; gap:0; border-bottom:2px solid var(--color-gray-200); margin-bottom:20px; overflow-x:auto; }
+    .tab-btn { padding:10px 18px; font-size:0.83rem; font-weight:600; color:var(--color-gray-500); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:color var(--transition); }
+    .tab-btn:hover { color:var(--color-gray-800); }
+    .tab-btn.active { color:var(--color-primary); border-bottom-color:var(--color-primary); }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
+
+    /* ── Stats ── */
+    .stats-row { display:flex; gap:0; border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; }
+    .stat-item { flex:1; padding:11px 14px; text-align:center; border-right:1px solid var(--color-gray-200); }
+    .stat-item:last-child { border-right:none; }
+    .stat-val { font-size:1.2rem; font-weight:800; color:var(--color-gray-900); line-height:1; }
+    .stat-lbl { font-size:0.68rem; color:var(--color-gray-500); margin-top:3px; }
+
+    /* ── Week navigator ── */
+    .week-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .week-nav h2 { font-size:0.95rem; font-weight:700; color:var(--color-gray-800); }
+    .nav-btn { width:32px; height:32px; border-radius:var(--radius-md); border:1px solid var(--color-gray-200); background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-gray-600); transition:background var(--transition); }
+    .nav-btn:hover { background:var(--color-gray-100); }
+
+    /* ── Shift grid ── */
+    .shift-grid { border:1px solid var(--color-gray-200); border-radius:var(--radius-xl); overflow:hidden; box-shadow:var(--shadow-sm); }
+    .shift-grid-head { display:grid; grid-template-columns:140px repeat(7,1fr); background:var(--color-gray-50); border-bottom:2px solid var(--color-gray-200); }
+    .shift-grid-head > div { padding:9px 8px; text-align:center; font-size:0.72rem; font-weight:700; color:var(--color-gray-500); border-right:1px solid var(--color-gray-200); }
+    .shift-grid-head > div:last-child { border-right:none; }
+    .shift-grid-head .day-col.today { color:var(--color-primary); background:var(--color-primary-light); }
+    .shift-grid-head .day-col.sun { color:var(--color-danger); }
+    .shift-grid-head .day-col.sat { color:var(--color-primary); }
+
+    .shift-row { display:grid; grid-template-columns:140px repeat(7,1fr); border-bottom:1px solid var(--color-gray-100); }
+    .shift-row:last-child { border-bottom:none; }
+    .shift-row:hover { background:var(--color-gray-50); }
+    .staff-cell { padding:8px 10px; border-right:1px solid var(--color-gray-200); display:flex; align-items:center; gap:7px; }
+    .s-avatar { width:28px; height:28px; border-radius:50%; font-size:0.72rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .s-name { font-size:0.78rem; font-weight:600; color:var(--color-gray-800); }
+    .s-role { font-size:0.65rem; color:var(--color-gray-400); }
+
+    .day-cell { padding:5px 4px; border-right:1px solid var(--color-gray-100); min-height:52px; cursor:pointer; transition:background var(--transition); }
+    .day-cell:last-child { border-right:none; }
+    .day-cell:hover { background:#eff6ff; }
+    .day-cell.today { background:#f0f9ff; }
+
+    /* ── Shift chip ── */
+    .shift-chip { border-radius:var(--radius-md); padding:3px 6px; font-size:0.65rem; font-weight:700; display:flex; flex-direction:column; gap:1px; cursor:pointer; transition:opacity var(--transition); }
+    .shift-chip:hover { opacity:.85; }
+    .shift-chip .sc-name { font-size:0.62rem; }
+    .shift-chip .sc-time { font-size:0.6rem; opacity:.85; }
+    .chip-lunch   { background:#dbeafe; color:#1e40af; }
+    .chip-dinner  { background:#d1fae5; color:#065f46; }
+    .chip-full    { background:#ede9fe; color:#5b21b6; }
+    .chip-morning { background:#fef3c7; color:#92400e; }
+    .chip-off     { background:var(--color-gray-100); color:var(--color-gray-400); font-size:0.62rem; text-align:center; padding:4px; border-radius:var(--radius-sm); }
+    .chip-req     { background:#fee2e2; color:#dc2626; border:1px dashed #fca5a5; }
+
+    /* ── Pattern cards ── */
+    .pattern-card { border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:14px 16px; display:flex; align-items:flex-start; gap:12px; transition:box-shadow var(--transition); }
+    .pattern-card:hover { box-shadow:var(--shadow-md); }
+    .pattern-dot { width:12px; height:12px; border-radius:50%; margin-top:4px; flex-shrink:0; }
+    .pattern-info { flex:1; }
+    .pattern-name { font-size:0.88rem; font-weight:700; color:var(--color-gray-900); margin-bottom:3px; }
+    .pattern-time { font-size:0.78rem; color:var(--color-gray-600); }
+    .pattern-pos  { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+
+    /* ── LINE broadcast box ── */
+    .line-box { background:linear-gradient(135deg,#f0fdf4,#dcfce7); border:1px solid #86efac; border-radius:var(--radius-xl); padding:20px 22px; }
+    .line-box-title { font-size:0.95rem; font-weight:700; color:#166534; margin-bottom:4px; }
+    .line-box-sub   { font-size:0.8rem; color:#4ade80; margin-bottom:16px; }
+
+    /* ── Recruit card ── */
+    .recruit-card { border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:14px 16px; margin-bottom:10px; }
+    .recruit-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .recruit-resp { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .resp-chip { display:flex; align-items:center; gap:5px; padding:4px 10px; border-radius:var(--radius-full); font-size:0.75rem; font-weight:600; border:1px solid; }
+    .resp-ok  { background:#dcfce7; color:#166534; border-color:#86efac; }
+    .resp-ng  { background:#fee2e2; color:#dc2626; border-color:#fca5a5; }
+    .resp-wait { background:#fef3c7; color:#92400e; border-color:#fcd34d; }
+
+    /* ── Slide panel ── */
+    .panel-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:150; }
+    .panel-overlay.active { display:block; }
+    .slide-panel { position:fixed; top:0; right:-460px; width:440px; height:100vh; background:#fff; z-index:160; box-shadow:-8px 0 40px rgba(0,0,0,.12); transition:right .3s ease; display:flex; flex-direction:column; }
+    .slide-panel.open { right:0; }
+    .panel-header { padding:16px 20px; border-bottom:1px solid var(--color-gray-200); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+    .panel-header h2 { font-size:0.95rem; font-weight:700; color:var(--color-gray-900); margin:0; }
+    .panel-close { width:32px; height:32px; border-radius:var(--radius-md); border:none; background:var(--color-gray-100); cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--color-gray-600); font-size:18px; }
+    .panel-body  { flex:1; overflow-y:auto; padding:20px; }
+    .panel-footer{ padding:14px 20px; border-top:1px solid var(--color-gray-200); display:flex; gap:10px; flex-shrink:0; }
+
+    /* ── Misc ── */
+    .page-header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+    .sec-head { font-size:0.82rem; font-weight:700; color:var(--color-gray-700); padding-bottom:8px; border-bottom:1px solid var(--color-gray-100); margin-bottom:12px; }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+    .modal-overlay.active { display:flex; }
+    .modal-box { background:#fff; border-radius:var(--radius-xl); padding:24px 28px; max-width:440px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+    .modal-box h3 { font-size:1rem; font-weight:700; margin-bottom:6px; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+    <div class="page-content">
+
+      <!-- Page header -->
+      <div class="page-header-row">
+        <div>
+          <nav class="breadcrumb">
+            <a href="index.html">ホーム</a>
+            <span class="breadcrumb-sep">›</span>
+            <span>マスタ管理</span>
+            <span class="breadcrumb-sep">›</span>
+            <span>シフト管理</span>
+          </nav>
+          <h1 class="page-title" style="margin-top:8px">📅 シフト管理</h1>
+          <p class="page-subtitle">週間シフト・シフトパターン・LINE募集を管理します。</p>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;margin-top:6px">
+          <button class="btn btn-outline" onclick="openLineModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 13.5 19.79 19.79 0 0 1 1.08 4.86 2 2 0 0 1 3.05 2.68h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 9.91a16 16 0 0 0 6.13 6.13l.38-.38a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21 18v.92z"/></svg>
+            LINEにシフト募集を送信
+          </button>
+          <button class="btn btn-danger" onclick="openPanel('new')">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            シフトを追加
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="stat-val">18</div>
+          <div class="stat-lbl">総スタッフ数</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-success)">12</div>
+          <div class="stat-lbl">今週出勤予定</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-warning)">3</div>
+          <div class="stat-lbl">募集中のシフト</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val" style="color:var(--color-primary)">8</div>
+          <div class="stat-lbl">承認待ち</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-val">4</div>
+          <div class="stat-lbl">シフトパターン</div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(this,'pane-week')">📆 週間シフト</button>
+        <button class="tab-btn"        onclick="switchTab(this,'pane-pattern')">⚙️ シフトパターン</button>
+        <button class="tab-btn"        onclick="switchTab(this,'pane-recruit')">📣 募集・応募状況</button>
+        <button class="tab-btn"        onclick="switchTab(this,'pane-request')">📝 申請一覧</button>
+      </div>
+
+
+      <!-- ════════════════════ TAB: 週間シフト ════════════════════ -->
+      <div class="tab-pane active" id="pane-week">
+
+        <!-- Week nav -->
+        <div class="week-nav">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="nav-btn" onclick="showToast('前の週に移動')">‹</button>
+            <h2>2026年 4月 第1週（3/30 〜 4/5）</h2>
+            <button class="nav-btn" onclick="showToast('次の週に移動')">›</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-sm btn-secondary" onclick="showToast('今週に移動')">今週</button>
+            <select class="form-control" style="width:auto;font-size:0.8rem">
+              <option>全スタッフ</option>
+              <option>ホール</option>
+              <option>キッチン</option>
+              <option>カウンター</option>
+            </select>
+            <button class="btn btn-sm btn-outline" onclick="showToast('PDFを出力しました')">
+              <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PDF出力
+            </button>
+          </div>
+        </div>
+
+        <!-- Legend -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--color-gray-600)"><span style="width:10px;height:10px;border-radius:2px;background:#dbeafe;display:inline-block"></span>ランチ</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--color-gray-600)"><span style="width:10px;height:10px;border-radius:2px;background:#d1fae5;display:inline-block"></span>ディナー</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--color-gray-600)"><span style="width:10px;height:10px;border-radius:2px;background:#ede9fe;display:inline-block"></span>フル</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--color-gray-600)"><span style="width:10px;height:10px;border-radius:2px;background:#fef3c7;display:inline-block"></span>早番</div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:var(--color-gray-600)"><span style="width:10px;height:10px;border-radius:2px;background:#fee2e2;border:1px dashed #fca5a5;display:inline-block"></span>募集中</div>
+        </div>
+
+        <!-- Shift grid -->
+        <div class="shift-grid">
+          <!-- Header -->
+          <div class="shift-grid-head">
+            <div style="text-align:left;padding-left:10px">スタッフ</div>
+            <div class="day-col sun">日<br><span style="font-weight:400">3/30</span></div>
+            <div class="day-col">月<br><span style="font-weight:400">3/31</span></div>
+            <div class="day-col today">火<br><span style="font-weight:400">4/1</span></div>
+            <div class="day-col">水<br><span style="font-weight:400">4/2</span></div>
+            <div class="day-col">木<br><span style="font-weight:400">4/3</span></div>
+            <div class="day-col">金<br><span style="font-weight:400">4/4</span></div>
+            <div class="day-col sat">土<br><span style="font-weight:400">4/5</span></div>
+          </div>
+
+          <!-- 山田 太郎（店長） -->
+          <div class="shift-row">
+            <div class="staff-cell">
+              <div class="s-avatar" style="background:#dbeafe;color:#1e40af">山</div>
+              <div><div class="s-name">山田 太郎</div><div class="s-role">店長</div></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell chip-off" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">休</span>
+            </div>
+            <div class="day-cell today" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+          </div>
+
+          <!-- 田中 美咲（副店長） -->
+          <div class="shift-row">
+            <div class="staff-cell">
+              <div class="s-avatar" style="background:#d1fae5;color:#065f46">田</div>
+              <div><div class="s-name">田中 美咲</div><div class="s-role">副店長</div></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-lunch"><span class="sc-name">ランチ</span><span class="sc-time">10–15</span></div>
+            </div>
+            <div class="day-cell today" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">休</span>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+          </div>
+
+          <!-- 佐藤 花子（ホール） -->
+          <div class="shift-row">
+            <div class="staff-cell">
+              <div class="s-avatar" style="background:#fef3c7;color:#92400e">佐</div>
+              <div><div class="s-name">佐藤 花子</div><div class="s-role">ホール</div></div>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">休</span>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-lunch"><span class="sc-name">ランチ</span><span class="sc-time">10–15</span></div>
+            </div>
+            <div class="day-cell today" onclick="openPanel('edit')">
+              <div class="shift-chip chip-lunch"><span class="sc-name">ランチ</span><span class="sc-time">10–15</span></div>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">休</span>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-lunch"><span class="sc-name">ランチ</span><span class="sc-time">10–15</span></div>
+            </div>
+          </div>
+
+          <!-- 鈴木 一郎（キッチン） -->
+          <div class="shift-row">
+            <div class="staff-cell">
+              <div class="s-avatar" style="background:#fce7f3;color:#9d174d">鈴</div>
+              <div><div class="s-name">鈴木 一郎</div><div class="s-role">キッチン</div></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell today" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">休</span>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+          </div>
+
+          <!-- 高橋 あかり（ホール） -->
+          <div class="shift-row">
+            <div class="staff-cell">
+              <div class="s-avatar" style="background:#ede9fe;color:#5b21b6">高</div>
+              <div><div class="s-name">高橋 あかり</div><div class="s-role">ホール</div></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">休</span>
+            </div>
+            <div class="day-cell today" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-lunch"><span class="sc-name">ランチ</span><span class="sc-time">10–15</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+          </div>
+
+          <!-- 中村 健太（キッチンL） -->
+          <div class="shift-row">
+            <div class="staff-cell">
+              <div class="s-avatar" style="background:#cffafe;color:#0e7490">中</div>
+              <div><div class="s-name">中村 健太</div><div class="s-role">キッチンL</div></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell today" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">休</span>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-dinner"><span class="sc-name">ディナー</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openPanel('edit')">
+              <div class="shift-chip chip-full"><span class="sc-name">フル</span><span class="sc-time">10–22</span></div>
+            </div>
+          </div>
+
+          <!-- 募集中ロー -->
+          <div class="shift-row" style="background:#fff9f9">
+            <div class="staff-cell">
+              <div class="s-avatar" style="background:var(--color-gray-200);color:var(--color-gray-400)">?</div>
+              <div><div class="s-name" style="color:var(--color-danger)">ホール（未定）</div><div class="s-role" style="color:var(--color-danger)">募集中</div></div>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">—</span>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">—</span>
+            </div>
+            <div class="day-cell today" onclick="openLineModal()" style="cursor:pointer">
+              <div class="shift-chip chip-req"><span class="sc-name">🔴 空き</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openLineModal()" style="cursor:pointer">
+              <div class="shift-chip chip-req"><span class="sc-name">🔴 空き</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" onclick="openLineModal()" style="cursor:pointer">
+              <div class="shift-chip chip-req"><span class="sc-name">🔴 空き</span><span class="sc-time">17–22</span></div>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">—</span>
+            </div>
+            <div class="day-cell" style="display:flex;align-items:center;justify-content:center">
+              <span class="chip-off">—</span>
+            </div>
+          </div>
+
+        </div><!-- /shift-grid -->
+
+        <!-- Daily total -->
+        <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-lg);margin-top:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:140px repeat(7,1fr);background:var(--color-gray-50)">
+            <div style="padding:8px 10px;font-size:0.72rem;font-weight:700;color:var(--color-gray-500);border-right:1px solid var(--color-gray-200)">出勤人数（日計）</div>
+            <div style="padding:8px;text-align:center;font-size:0.78rem;font-weight:700;color:var(--color-danger);border-right:1px solid var(--color-gray-200)">5名</div>
+            <div style="padding:8px;text-align:center;font-size:0.78rem;font-weight:700;color:var(--color-gray-800);border-right:1px solid var(--color-gray-200)">5名</div>
+            <div style="padding:8px;text-align:center;font-size:0.78rem;font-weight:700;color:var(--color-primary);border-right:1px solid var(--color-gray-200)">5名</div>
+            <div style="padding:8px;text-align:center;font-size:0.78rem;font-weight:700;color:var(--color-gray-800);border-right:1px solid var(--color-gray-200)">5名</div>
+            <div style="padding:8px;text-align:center;font-size:0.78rem;font-weight:700;color:var(--color-gray-800);border-right:1px solid var(--color-gray-200)">5名</div>
+            <div style="padding:8px;text-align:center;font-size:0.78rem;font-weight:700;color:var(--color-gray-800);border-right:1px solid var(--color-gray-200)">6名</div>
+            <div style="padding:8px;text-align:center;font-size:0.78rem;font-weight:700;color:var(--color-gray-800)">6名</div>
+          </div>
+        </div>
+
+      </div><!-- /pane-week -->
+
+
+      <!-- ════════════════════ TAB: シフトパターン ════════════════════ -->
+      <div class="tab-pane" id="pane-pattern">
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <p style="font-size:0.83rem;color:var(--color-gray-600)">繰り返し利用するシフトパターンを定義します。</p>
+          <button class="btn btn-danger btn-sm" onclick="openPanel('pattern')">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            パターンを追加
+          </button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+
+          <div class="pattern-card">
+            <div class="pattern-dot" style="background:#1e40af"></div>
+            <div class="pattern-info">
+              <div class="pattern-name">ランチタイム</div>
+              <div class="pattern-time">⏰ 10:00 〜 15:00　｜　休憩 12:00〜12:30（30分）</div>
+              <div class="pattern-pos">
+                <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:0.68rem">🛎️ ホール</span>
+                <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:0.68rem">🍳 キッチン</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('pattern')">編集</button>
+              <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="showToast('削除しました')">削除</button>
+            </div>
+          </div>
+
+          <div class="pattern-card">
+            <div class="pattern-dot" style="background:#065f46"></div>
+            <div class="pattern-info">
+              <div class="pattern-name">ディナータイム</div>
+              <div class="pattern-time">⏰ 17:00 〜 22:00　｜　休憩 19:00〜19:30（30分）</div>
+              <div class="pattern-pos">
+                <span class="badge" style="background:#d1fae5;color:#065f46;font-size:0.68rem">🛎️ ホール</span>
+                <span class="badge" style="background:#d1fae5;color:#065f46;font-size:0.68rem">🍳 キッチン</span>
+                <span class="badge" style="background:#d1fae5;color:#065f46;font-size:0.68rem">🧾 カウンター</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('pattern')">編集</button>
+              <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="showToast('削除しました')">削除</button>
+            </div>
+          </div>
+
+          <div class="pattern-card">
+            <div class="pattern-dot" style="background:#5b21b6"></div>
+            <div class="pattern-info">
+              <div class="pattern-name">フルタイム</div>
+              <div class="pattern-time">⏰ 10:00 〜 22:00　｜　休憩 12:30〜13:30 / 18:00〜18:30</div>
+              <div class="pattern-pos">
+                <span class="badge" style="background:#ede9fe;color:#5b21b6;font-size:0.68rem">全ポジション</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('pattern')">編集</button>
+              <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="showToast('削除しました')">削除</button>
+            </div>
+          </div>
+
+          <div class="pattern-card">
+            <div class="pattern-dot" style="background:#92400e"></div>
+            <div class="pattern-info">
+              <div class="pattern-name">早番</div>
+              <div class="pattern-time">⏰ 08:00 〜 14:00　｜　休憩 10:30〜11:00（30分）</div>
+              <div class="pattern-pos">
+                <span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.68rem">🛎️ ホール</span>
+                <span class="badge" style="background:#fef3c7;color:#92400e;font-size:0.68rem">🚪 開店準備</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="openPanel('pattern')">編集</button>
+              <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="showToast('削除しました')">削除</button>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /pane-pattern -->
+
+
+      <!-- ════════════════════ TAB: 募集・応募状況 ════════════════════ -->
+      <div class="tab-pane" id="pane-recruit">
+
+        <!-- LINE broadcast box -->
+        <div class="line-box" style="margin-bottom:20px">
+          <div class="line-box-title">📣 LINEでシフト募集を送信</div>
+          <div style="font-size:0.8rem;color:#166534;margin-bottom:16px">LINE連携済みのスタッフに一斉でシフト募集通知を送信します。</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end">
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:0.73rem">日付</label>
+              <input type="date" class="form-control" value="2026-04-03">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:0.73rem">シフトパターン</label>
+              <select class="form-control">
+                <option>ディナータイム (17–22)</option>
+                <option>ランチタイム (10–15)</option>
+                <option>フルタイム (10–22)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label" style="font-size:0.73rem">必要人数</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" class="form-control" value="2" min="1" max="10">
+                <span style="font-size:0.8rem;color:var(--color-gray-500);white-space:nowrap">名</span>
+              </div>
+            </div>
+            <button class="btn" style="background:#06c755;color:#fff;font-weight:700;white-space:nowrap" onclick="showToast('LINEにシフト募集を送信しました！')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+              LINEに送信する
+            </button>
+          </div>
+        </div>
+
+        <!-- Active recruits -->
+        <div style="font-size:0.88rem;font-weight:700;color:var(--color-gray-800);margin-bottom:12px">募集中のシフト（3件）</div>
+
+        <div class="recruit-card">
+          <div class="recruit-head">
+            <div>
+              <div style="font-weight:700;color:var(--color-gray-900)">2026/04/01（火） ディナータイム</div>
+              <div style="font-size:0.78rem;color:var(--color-gray-500)">17:00 〜 22:00 ／ 必要：2名 ／ 送信：14名</div>
+            </div>
+            <span class="badge badge-yellow">募集中</span>
+          </div>
+          <div style="font-size:0.75rem;font-weight:600;color:var(--color-gray-500);margin-bottom:4px">応募状況</div>
+          <div class="recruit-resp">
+            <span class="resp-ok"><div class="s-avatar" style="background:#d1fae5;color:#065f46;width:20px;height:20px;font-size:0.6rem">鈴</div> 鈴木 一郎 — OK</span>
+            <span class="resp-wait"><div class="s-avatar" style="background:#fef3c7;color:#92400e;width:20px;height:20px;font-size:0.6rem">高</div> 高橋 あかり — 検討中</span>
+            <span class="resp-wait"><div class="s-avatar" style="background:#ede9fe;color:#5b21b6;width:20px;height:20px;font-size:0.6rem">伊</div> 伊藤 大輝 — 未返信</span>
+            <span class="resp-ng"><div class="s-avatar" style="background:#fee2e2;color:#dc2626;width:20px;height:20px;font-size:0.6rem">小</div> 小林 さくら — NG</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-sm btn-primary" onclick="showToast('鈴木 一郎をシフトに追加しました')">鈴木を承認</button>
+            <button class="btn btn-sm btn-outline" onclick="showToast('リマインドを送信しました')">未返信にリマインド</button>
+          </div>
+        </div>
+
+        <div class="recruit-card">
+          <div class="recruit-head">
+            <div>
+              <div style="font-weight:700;color:var(--color-gray-900)">2026/04/02（水） ディナータイム</div>
+              <div style="font-size:0.78rem;color:var(--color-gray-500)">17:00 〜 22:00 ／ 必要：1名 ／ 送信：14名</div>
+            </div>
+            <span class="badge badge-yellow">募集中</span>
+          </div>
+          <div style="font-size:0.75rem;font-weight:600;color:var(--color-gray-500);margin-bottom:4px">応募状況</div>
+          <div class="recruit-resp">
+            <span class="resp-wait"><div class="s-avatar" style="background:#fef3c7;color:#92400e;width:20px;height:20px;font-size:0.6rem">佐</div> 佐藤 花子 — 検討中</span>
+            <span class="resp-wait"><div class="s-avatar" style="background:#cffafe;color:#0e7490;width:20px;height:20px;font-size:0.6rem">中</div> 中村 健太 — 未返信</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-sm btn-outline" onclick="showToast('リマインドを送信しました')">未返信にリマインド</button>
+          </div>
+        </div>
+
+        <div class="recruit-card">
+          <div class="recruit-head">
+            <div>
+              <div style="font-weight:700;color:var(--color-gray-900)">2026/04/03（木） ディナータイム</div>
+              <div style="font-size:0.78rem;color:var(--color-gray-500)">17:00 〜 22:00 ／ 必要：1名 ／ 送信：14名</div>
+            </div>
+            <span class="badge badge-yellow">募集中</span>
+          </div>
+          <div style="font-size:0.75rem;font-weight:600;color:var(--color-gray-500);margin-bottom:4px">応募状況（まだ返信なし）</div>
+          <div class="recruit-resp">
+            <span style="font-size:0.78rem;color:var(--color-gray-400)">返信待ち…</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-sm btn-outline" onclick="showToast('リマインドを送信しました')">未返信にリマインド</button>
+            <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626" onclick="showToast('募集をキャンセルしました')">募集キャンセル</button>
+          </div>
+        </div>
+
+      </div><!-- /pane-recruit -->
+
+
+      <!-- ════════════════════ TAB: 申請一覧 ════════════════════ -->
+      <div class="tab-pane" id="pane-request">
+        <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+          <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+            <thead>
+              <tr style="background:var(--color-gray-50)">
+                <th style="padding:10px 12px;text-align:left;font-size:0.7rem;font-weight:700;color:var(--color-gray-500);border-bottom:2px solid var(--color-gray-200)">スタッフ</th>
+                <th style="padding:10px 12px;text-align:left;font-size:0.7rem;font-weight:700;color:var(--color-gray-500);border-bottom:2px solid var(--color-gray-200);width:100px">申請種別</th>
+                <th style="padding:10px 12px;text-align:left;font-size:0.7rem;font-weight:700;color:var(--color-gray-500);border-bottom:2px solid var(--color-gray-200)">対象日時</th>
+                <th style="padding:10px 12px;text-align:left;font-size:0.7rem;font-weight:700;color:var(--color-gray-500);border-bottom:2px solid var(--color-gray-200)">理由</th>
+                <th style="padding:10px 12px;text-align:left;font-size:0.7rem;font-weight:700;color:var(--color-gray-500);border-bottom:2px solid var(--color-gray-200);width:80px">状態</th>
+                <th style="padding:10px 12px;text-align:left;font-size:0.7rem;font-weight:700;color:var(--color-gray-500);border-bottom:2px solid var(--color-gray-200);width:120px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)">
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <div class="s-avatar" style="background:#fef3c7;color:#92400e;width:28px;height:28px;font-size:0.7rem">佐</div>
+                    <div><div style="font-weight:600">佐藤 花子</div><div style="font-size:0.7rem;color:var(--color-gray-400)">ホール</div></div>
+                  </div>
+                </td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)"><span class="badge badge-yellow">シフト変更</span></td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100);font-size:0.8rem">4/5（土）10:00〜15:00</td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100);font-size:0.78rem;color:var(--color-gray-600)">家庭の事情</td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)"><span class="badge" style="background:#fef3c7;color:#92400e">承認待ち</span></td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)">
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-primary" style="padding:5px 9px" onclick="showToast('承認しました')">承認</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="showToast('却下しました')">却下</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)">
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <div class="s-avatar" style="background:#ede9fe;color:#5b21b6;width:28px;height:28px;font-size:0.7rem">高</div>
+                    <div><div style="font-weight:600">高橋 あかり</div><div style="font-size:0.7rem;color:var(--color-gray-400)">ホール</div></div>
+                  </div>
+                </td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)"><span class="badge" style="background:#fee2e2;color:#dc2626">休暇申請</span></td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100);font-size:0.8rem">4/7（月） 終日</td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100);font-size:0.78rem;color:var(--color-gray-600)">私用</td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)"><span class="badge" style="background:#fef3c7;color:#92400e">承認待ち</span></td>
+                <td style="padding:11px 12px;border-bottom:1px solid var(--color-gray-100)">
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-sm btn-primary" style="padding:5px 9px" onclick="showToast('承認しました')">承認</button>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="showToast('却下しました')">却下</button>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:11px 12px">
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <div class="s-avatar" style="background:#fce7f3;color:#9d174d;width:28px;height:28px;font-size:0.7rem">鈴</div>
+                    <div><div style="font-weight:600">鈴木 一郎</div><div style="font-size:0.7rem;color:var(--color-gray-400)">キッチン</div></div>
+                  </div>
+                </td>
+                <td style="padding:11px 12px"><span class="badge badge-gray">シフト追加</span></td>
+                <td style="padding:11px 12px;font-size:0.8rem">4/10（金）17:00〜22:00</td>
+                <td style="padding:11px 12px;font-size:0.78rem;color:var(--color-gray-600)">自主応募</td>
+                <td style="padding:11px 12px"><span class="badge badge-green">承認済み</span></td>
+                <td style="padding:11px 12px">
+                  <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="showToast('詳細を表示')">詳細</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /pane-request -->
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+
+<!-- ══════════ SLIDE PANEL ══════════ -->
+<div class="panel-overlay" id="panel-overlay" onclick="closePanel()"></div>
+<div class="slide-panel" id="slide-panel">
+  <div class="panel-header">
+    <h2 id="panel-title">シフトを追加</h2>
+    <button class="panel-close" onclick="closePanel()">×</button>
+  </div>
+  <div class="panel-body">
+
+    <div class="sec-head">シフト情報</div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">スタッフ <span class="required">*</span></label>
+      <select class="form-control">
+        <option>山田 太郎（店長）</option>
+        <option>田中 美咲（副店長）</option>
+        <option selected>佐藤 花子（ホール）</option>
+        <option>鈴木 一郎（キッチン）</option>
+        <option>高橋 あかり（ホール）</option>
+        <option>中村 健太（キッチンL）</option>
+      </select>
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">日付 <span class="required">*</span></label>
+      <input type="date" class="form-control" value="2026-04-03">
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">シフトパターン</label>
+      <select class="form-control" id="pattern-select" onchange="applyPattern(this.value)">
+        <option value="">パターンを選択（任意）</option>
+        <option value="lunch">ランチタイム（10:00–15:00）</option>
+        <option value="dinner">ディナータイム（17:00–22:00）</option>
+        <option value="full">フルタイム（10:00–22:00）</option>
+        <option value="morning">早番（08:00–14:00）</option>
+      </select>
+    </div>
+
+    <div class="grid grid-2" style="gap:12px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">開始時間</label>
+        <input type="time" class="form-control" id="time-start" value="17:00">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">終了時間</label>
+        <input type="time" class="form-control" id="time-end" value="22:00">
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="gap:12px;margin-bottom:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">休憩 開始</label>
+        <input type="time" class="form-control" value="19:00">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">休憩 終了</label>
+        <input type="time" class="form-control" value="19:30">
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">ポジション</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:5px;font-size:0.8rem"><input type="checkbox" checked> 🛎️ ホール</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:0.8rem"><input type="checkbox"> 🍳 キッチン</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:0.8rem"><input type="checkbox"> 🧾 カウンター</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:0.8rem"><input type="checkbox"> 🚀 デリバリー</label>
+      </div>
+    </div>
+
+    <div class="sec-head" style="margin-top:18px">繰り返し設定</div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">繰り返し</label>
+      <select class="form-control">
+        <option>繰り返しなし</option>
+        <option>毎週（同じ曜日）</option>
+        <option>毎日</option>
+        <option>平日のみ</option>
+      </select>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--color-gray-50);border-radius:var(--radius-md)">
+      <div>
+        <div style="font-size:0.83rem;font-weight:600">LINEで通知する</div>
+        <div style="font-size:0.72rem;color:var(--color-gray-500)">スタッフにシフト確定通知を送信</div>
+      </div>
+      <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+    </div>
+
+  </div>
+  <div class="panel-footer">
+    <button class="btn btn-secondary" style="flex:1" onclick="closePanel()">キャンセル</button>
+    <button class="btn btn-primary" style="flex:2" onclick="saveShift()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      保存する
+    </button>
+  </div>
+</div>
+
+
+<!-- ══════════ LINE MODAL ══════════ -->
+<div class="modal-overlay" id="line-modal" onclick="closeLineModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <div style="width:44px;height:44px;background:#06c755;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.105.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+      </div>
+      <div>
+        <h3 style="margin:0;font-size:1rem">LINEでシフト募集を送信</h3>
+        <p style="font-size:0.78rem;color:var(--color-gray-500);margin:2px 0 0">14名のLINE連携済みスタッフに送信されます</p>
+      </div>
+    </div>
+
+    <div style="background:var(--color-gray-50);border-radius:var(--radius-md);padding:12px;margin-bottom:14px;font-size:0.82rem">
+      <div style="font-weight:700;color:var(--color-gray-700);margin-bottom:4px">送信内容プレビュー</div>
+      <div style="background:#fff;border:1px solid var(--color-gray-200);border-radius:var(--radius-md);padding:10px;font-size:0.8rem;line-height:1.6;color:var(--color-gray-700)">
+        【シフト募集】<br>
+        📅 日時：2026/04/03（木）<br>
+        ⏰ 時間：17:00 〜 22:00（ディナータイム）<br>
+        👥 必要人数：2名<br>
+        <br>
+        出勤可能な方は「OK」とご返信ください。<br>
+        ※ 先着順で確定します。
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeLineModal()">キャンセル</button>
+      <button class="btn" style="flex:2;background:#06c755;color:#fff;font-weight:700" onclick="showToast('LINEにシフト募集を送信しました！');closeLineModal()">
+        送信する（14名）
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">保存しました</span>
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'shift' });
+
+  /* ── Tab switch ── */
+  function switchTab(btn, id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ── Slide panel ── */
+  function openPanel(mode) {
+    const titles = { new:'シフトを追加', edit:'シフトを編集', pattern:'シフトパターンを編集' };
+    document.getElementById('panel-title').textContent = titles[mode] || 'シフトを追加';
+    document.getElementById('panel-overlay').classList.add('active');
+    document.getElementById('slide-panel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePanel() {
+    document.getElementById('panel-overlay').classList.remove('active');
+    document.getElementById('slide-panel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function saveShift() {
+    closePanel();
+    showToast('シフトを保存しました');
+  }
+
+  /* ── Apply pattern ── */
+  const PATTERNS = {
+    lunch:   { start:'10:00', end:'15:00' },
+    dinner:  { start:'17:00', end:'22:00' },
+    full:    { start:'10:00', end:'22:00' },
+    morning: { start:'08:00', end:'14:00' },
+  };
+  function applyPattern(val) {
+    const p = PATTERNS[val];
+    if (!p) return;
+    document.getElementById('time-start').value = p.start;
+    document.getElementById('time-end').value   = p.end;
+  }
+
+  /* ── LINE modal ── */
+  function openLineModal() {
+    document.getElementById('line-modal').classList.add('active');
+  }
+  function closeLineModal() {
+    document.getElementById('line-modal').classList.remove('active');
+  }
+
+  /* ── Toast ── */
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    toast.style.display = 'flex';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+</script>
+</body>
+</html>

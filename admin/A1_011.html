@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI・自動化設定 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Tab bar ── */
+    .tab-bar { display:flex; gap:2px; border-bottom:2px solid var(--color-gray-200); margin-bottom:24px; overflow-x:auto; }
+    .tab-btn  { display:flex; align-items:center; gap:6px; padding:10px 16px; font-size:0.82rem; font-weight:600; color:var(--color-gray-500); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:color var(--transition); }
+    .tab-btn:hover { color:var(--color-gray-800); }
+    .tab-btn.active { color:var(--color-primary); border-bottom-color:var(--color-primary); }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
+
+    /* ── Card / sub-section ── */
+    .section-card { background:var(--color-white); border:1px solid var(--color-gray-200); border-radius:var(--radius-xl); margin-bottom:16px; box-shadow:var(--shadow-sm); overflow:hidden; }
+    .section-card-header { display:flex; align-items:center; gap:10px; padding:13px 18px; border-bottom:1px solid var(--color-gray-100); background:var(--color-gray-50); }
+    .section-card-title  { font-size:0.88rem; font-weight:700; color:var(--color-gray-900); }
+    .section-card-body   { padding:18px 20px; }
+
+    /* ── Info box ── */
+    .info-box { border-radius:var(--radius-md); padding:11px 14px; font-size:0.78rem; line-height:1.6; margin-bottom:14px; }
+    .info-box.blue   { background:#eff6ff; border-left:3px solid #3b82f6; color:#1e40af; }
+    .info-box.yellow { background:#fffbeb; border-left:3px solid #f59e0b; color:#92400e; }
+    .info-box.green  { background:#ecfdf5; border-left:3px solid #10b981; color:#065f46; }
+    .info-box.orange { background:#fff7ed; border-left:3px solid #f97316; color:#9a3412; }
+    .info-box.pink   { background:#fdf2f8; border-left:3px solid #ec4899; color:#831843; }
+    .info-box ul     { padding-left:16px; list-style:disc; margin-top:5px; display:flex; flex-direction:column; gap:3px; }
+    .info-box strong { font-weight:700; }
+
+    /* ── Prompt language tabs ── */
+    .lang-tab-bar { display:flex; gap:0; margin-bottom:10px; }
+    .lang-tab { padding:5px 12px; font-size:0.77rem; font-weight:600; border:1px solid var(--color-gray-300); background:var(--color-white); cursor:pointer; color:var(--color-gray-600); transition:background var(--transition); }
+    .lang-tab:first-child { border-radius:var(--radius-md) 0 0 var(--radius-md); }
+    .lang-tab:last-child  { border-radius:0 var(--radius-md) var(--radius-md) 0; }
+    .lang-tab + .lang-tab { border-left:none; }
+    .lang-tab.active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+
+    /* ── Logic table ── */
+    .logic-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .logic-table th { padding:9px 12px; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-gray-500); border-bottom:1px solid var(--color-gray-200); background:var(--color-gray-50); white-space:nowrap; }
+    .logic-table td { padding:10px 12px; border-bottom:1px solid var(--color-gray-100); vertical-align:middle; color:var(--color-gray-700); }
+    .logic-table tbody tr:last-child td { border-bottom:none; }
+    .logic-table tbody tr:hover { background:var(--color-gray-50); }
+
+    /* ── Category card grid ── */
+    .cat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+    .cat-card { border:2px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:12px; cursor:pointer; transition:border-color var(--transition), background var(--transition); position:relative; }
+    .cat-card.checked   { border-color:var(--color-success); background:#f0fdf4; }
+    .cat-card.excluded  { border-color:var(--color-gray-200); background:var(--color-gray-50); opacity:.75; }
+    .cat-card-title { font-size:0.82rem; font-weight:700; color:var(--color-gray-800); margin-bottom:3px; }
+    .cat-card-count { font-size:0.72rem; color:var(--color-gray-500); }
+    .cat-card-desc  { font-size:0.7rem; color:var(--color-gray-500); margin-top:4px; }
+    .cat-exclude-badge { position:absolute; top:8px; right:8px; }
+
+    /* ── Data summary stat ── */
+    .data-summary { display:grid; grid-template-columns:repeat(4,1fr); gap:0; border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); overflow:hidden; }
+    .data-summary-item { padding:14px 18px; text-align:center; border-right:1px solid var(--color-gray-200); }
+    .data-summary-item:last-child { border-right:none; }
+    .data-summary-val  { font-size:1.5rem; font-weight:800; color:var(--color-gray-900); }
+    .data-summary-label { font-size:0.72rem; color:var(--color-gray-500); margin-top:2px; }
+
+    /* ── Tag priority ── */
+    .tag-priority { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .tag-pill { display:flex; align-items:center; gap:6px; padding:7px 14px; background:var(--color-primary); color:#fff; border-radius:var(--radius-full); font-size:0.8rem; font-weight:700; cursor:grab; user-select:none; }
+    .tag-pill:active { cursor:grabbing; opacity:.8; }
+    .tag-arrow { color:var(--color-gray-300); font-size:1rem; }
+
+    /* ── Slider ── */
+    .range-wrap { position:relative; }
+    input[type=range] { width:100%; accent-color:var(--color-primary); height:5px; }
+
+    /* ── Sticky bar ── */
+    .sticky-bar { position:sticky; top:var(--header-height); z-index:30; background:var(--color-white); border-bottom:1px solid var(--color-gray-200); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .step-dot { width:8px; height:8px; border-radius:50%; background:var(--color-gray-200); }
+    .step-dot.active { background:var(--color-primary); width:20px; border-radius:4px; }
+    .step-dot.done   { background:var(--color-success); }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky bar -->
+    <div class="sticky-bar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <nav class="breadcrumb" style="margin:0">
+          <a href="index.html">ホーム</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>店舗設定</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>AI・自動化設定</span>
+        </nav>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot done"></div>
+          <div class="step-dot active"></div><div class="step-dot"></div>
+        </div>
+        <span style="font-size:0.72rem;color:var(--color-gray-500)">Step 5 / 6</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-secondary">キャンセル</button>
+        <button class="btn btn-primary" onclick="handleSave()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          保存
+        </button>
+        <a href="A1_015.html" class="btn btn-outline">次のステップ <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div style="margin-bottom:20px">
+        <h1 class="page-title">🤖 AI・自動化設定</h1>
+        <p class="page-subtitle">AIアシスタントの基本プロフィール・会話シナリオ・連携データ・おすすめエンジンを設定します。</p>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab-btn" data-tab="basic"    onclick="switchTab('basic')">  ① 基本設定</button>
+        <button class="tab-btn" data-tab="logic"    onclick="switchTab('logic')">  ② 会話ロジック</button>
+        <button class="tab-btn" data-tab="data"     onclick="switchTab('data')">   ③ AIデータ連携設定</button>
+        <button class="tab-btn" data-tab="engine"   onclick="switchTab('engine')"> ④ おすすめエンジン設定</button>
+      </div>
+
+
+      <!-- ═══════════════════════════════════
+           TAB 1 — 基本設定  (A1_011)
+      ═══════════════════════════════════ -->
+      <div class="tab-pane" id="pane-basic">
+        <div class="grid grid-2" style="gap:20px;align-items:start">
+
+          <!-- Left: 基本情報 + 言語 -->
+          <div>
+            <div class="section-card">
+              <div class="section-card-header"><span>🤖</span><span class="section-card-title">基本情報</span></div>
+              <div class="section-card-body" style="display:flex;flex-direction:column;gap:14px">
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">AI名</label>
+                  <input type="text" class="form-control" value="Hana" placeholder="例：Hana">
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">役割</label>
+                  <select class="form-control">
+                    <option selected>店員アシスタント</option>
+                    <option>案内スタッフ</option>
+                    <option>フロントスタッフ</option>
+                  </select>
+                </div>
+                <div class="grid grid-2" style="gap:12px">
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">応答速度（秒）</label>
+                    <input type="number" class="form-control" value="1.5" step="0.5" min="0.5" max="5">
+                  </div>
+                  <div class="form-group" style="margin:0">
+                    <label class="form-label">最大発話回数</label>
+                    <input type="number" class="form-control" value="5" min="1" max="20">
+                  </div>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label">キャラクタータイプ</label>
+                  <select class="form-control">
+                    <option selected>女性店員風（丁寧）</option>
+                    <option>男性店員風（カジュアル）</option>
+                    <option>ニュートラル</option>
+                    <option>元気・明るい</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-card-header"><span>🌐</span><span class="section-card-title">言語設定</span></div>
+              <div class="section-card-body">
+                <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+                  <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                    <input type="checkbox" checked style="accent-color:var(--color-primary)"> 🇯🇵 日本語
+                  </label>
+                  <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                    <input type="checkbox" checked style="accent-color:var(--color-primary)"> 🇬🇧 English
+                  </label>
+                  <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                    <input type="checkbox" style="accent-color:var(--color-primary)"> 🇻🇳 Tiếng Việt
+                  </label>
+                </div>
+                <div class="form-hint">有効な言語ごとにプロンプトを設定できます。</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: プロンプト + NG + テスト -->
+          <div>
+            <div class="section-card">
+              <div class="section-card-header"><span>💬</span><span class="section-card-title">多言語プロンプト設定</span></div>
+              <div class="section-card-body">
+                <div class="lang-tab-bar">
+                  <button class="lang-tab active" onclick="switchLangTab(this,'prompt-ja')">🇯🇵 日本語</button>
+                  <button class="lang-tab"        onclick="switchLangTab(this,'prompt-en')">🇬🇧 English</button>
+                  <button class="lang-tab"        onclick="switchLangTab(this,'prompt-vi')">🇻🇳 Tiếng Việt</button>
+                </div>
+                <textarea class="form-control" rows="5" id="prompt-ja">あなたは日本のレストランのAI店員です。丁寧な言葉で対応してください。</textarea>
+                <textarea class="form-control" rows="5" id="prompt-en" style="display:none">You are an AI staff member of a Japanese restaurant. Please respond politely and helpfully.</textarea>
+                <textarea class="form-control" rows="5" id="prompt-vi" style="display:none">Bạn là nhân viên AI của nhà hàng Nhật Bản. Hãy phản hồi lịch sự và hữu ích.</textarea>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-card-header"><span>🚫</span><span class="section-card-title">NGワード</span></div>
+              <div class="section-card-body">
+                <textarea class="form-control" rows="3" placeholder="例：不適切語、個人情報&#10;（改行で複数設定）"></textarea>
+                <div class="form-hint">AIが絶対に発言しないキーワードを設定します。</div>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-card-header"><span>🧪</span><span class="section-card-title">テスト会話</span></div>
+              <div class="section-card-body">
+                <div id="test-chat-log" style="min-height:60px;max-height:180px;overflow-y:auto;background:var(--color-gray-50);border:1px solid var(--color-gray-200);border-radius:var(--radius-md);padding:10px 12px;margin-bottom:10px;font-size:0.8rem;display:flex;flex-direction:column;gap:8px">
+                  <div style="color:var(--color-gray-400);font-style:italic;font-size:0.75rem">メッセージを送信してAIの返答を確認できます。</div>
+                </div>
+                <div style="display:flex;gap:8px">
+                  <input type="text" class="form-control" id="test-input" placeholder="例：こんにちは！" onkeydown="if(event.key==='Enter')sendTest()">
+                  <button class="btn btn-secondary" onclick="sendTest()">AIに送信</button>
+                  <button class="btn btn-primary" onclick="handleSave()">設定を保存</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /pane-basic -->
+
+
+      <!-- ═══════════════════════════════════
+           TAB 2 — 会話ロジック  (A1_012)
+      ═══════════════════════════════════ -->
+      <div class="tab-pane" id="pane-logic">
+        <div class="section-card">
+          <div class="section-card-header">
+            <span>📋</span>
+            <span class="section-card-title">会話ロジック一覧</span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+              <div class="lang-tab-bar" style="margin:0">
+                <button class="lang-tab active" onclick="switchLangTab(this,'logic-ja');switchLogicLang('ja')">🇯🇵 日本語</button>
+                <button class="lang-tab"        onclick="switchLangTab(this,'logic-en');switchLogicLang('en')">🇬🇧 English</button>
+                <button class="lang-tab"        onclick="switchLangTab(this,'logic-vi');switchLogicLang('vi')">🇻🇳 Tiếng Việt</button>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openLogicModal()">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                新規追加
+              </button>
+            </div>
+          </div>
+          <div class="section-card-body" style="padding:0">
+            <table class="logic-table">
+              <thead>
+                <tr>
+                  <th style="width:160px">質問キーワード</th>
+                  <th>AI回答テンプレート</th>
+                  <th style="width:90px">タイプ</th>
+                  <th style="width:80px">操作</th>
+                </tr>
+              </thead>
+              <tbody id="logic-tbody">
+                <tr>
+                  <td><strong>トイレ</strong></td>
+                  <td>トイレは奥の右側にございます。</td>
+                  <td><span class="badge badge-yellow">固定回答</span></td>
+                  <td><div style="display:flex;gap:4px">
+                    <button class="btn btn-sm" style="background:#f97316;color:#fff;padding:5px 9px" title="編集" onclick="editLogicRow(this)">✏️</button>
+                    <button class="btn btn-sm btn-secondary" title="削除" onclick="this.closest('tr').remove()">🗑</button>
+                  </div></td>
+                </tr>
+                <tr>
+                  <td><strong>おすすめ</strong></td>
+                  <td>本日のおすすめは「焼き鳥セット」です！</td>
+                  <td><span class="badge badge-yellow">固定回答</span></td>
+                  <td><div style="display:flex;gap:4px">
+                    <button class="btn btn-sm" style="background:#f97316;color:#fff;padding:5px 9px" onclick="editLogicRow(this)">✏️</button>
+                    <button class="btn btn-sm btn-secondary" onclick="this.closest('tr').remove()">🗑</button>
+                  </div></td>
+                </tr>
+                <tr>
+                  <td><strong>営業時間</strong></td>
+                  <td>月〜金：11:00-22:00、土日：10:00-23:00です。</td>
+                  <td><span class="badge badge-yellow">固定回答</span></td>
+                  <td><div style="display:flex;gap:4px">
+                    <button class="btn btn-sm" style="background:#f97316;color:#fff;padding:5px 9px" onclick="editLogicRow(this)">✏️</button>
+                    <button class="btn btn-sm btn-secondary" onclick="this.closest('tr').remove()">🗑</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /pane-logic -->
+
+
+      <!-- ═══════════════════════════════════
+           TAB 3 — AIデータ連携設定  (A1_013)
+      ═══════════════════════════════════ -->
+      <div class="tab-pane" id="pane-data">
+
+        <div class="section-card">
+          <div class="section-card-header"><span>🔗</span><span class="section-card-title">AIデータ連携設定</span></div>
+          <div class="section-card-body">
+            <p style="font-size:0.82rem;color:var(--color-gray-600);margin-bottom:14px">AIに送信するデータを選択してください。チェックを入れたデータのみがAIに連携されます。</p>
+            <div class="info-box blue">
+              <strong>💡 設定のポイント</strong>
+              <ul>
+                <li>AIに送信するデータを選択することで、より正確な応答や提案が可能になります。</li>
+                <li>メニューカテゴリは個別に選択でき、不要なカテゴリ（Takeout、展示品など）を除外できます。</li>
+              </ul>
+            </div>
+
+            <!-- 連携データ選択 -->
+            <h3 style="font-size:0.82rem;font-weight:700;color:var(--color-gray-700);margin-bottom:12px">連携データ選択</h3>
+
+            <!-- メニュー情報 -->
+            <div style="border:2px solid var(--color-success);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;background:#f0fdf4">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <input type="checkbox" checked style="accent-color:var(--color-success);width:16px;height:16px;margin-top:2px">
+                <div style="flex:1">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                    <span style="font-size:0.88rem;font-weight:700;color:var(--color-gray-900)">🍜 メニュー情報</span>
+                    <span class="badge badge-green">連携中</span>
+                  </div>
+                  <p style="font-size:0.77rem;color:var(--color-gray-600);margin-bottom:8px">メニュー名・価格・説明・栄養情報・アレルギー情報・タグ・カスタマイズ設定・おすすめ情報など、メニューに関する全ての情報をAIに送信します。</p>
+                  <div style="display:flex;flex-wrap:wrap;gap:5px">
+                    <span class="badge badge-green" style="font-size:0.68rem">メニュー名・価格</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">説明・画像</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">栄養・アレルギー</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">タグ・カテゴリ</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">カスタマイズ</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">おすすめ・人気</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 在庫・混雑状況 -->
+            <div style="border:2px solid var(--color-success);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;background:#f0fdf4">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <input type="checkbox" checked style="accent-color:var(--color-success);width:16px;height:16px;margin-top:2px">
+                <div style="flex:1">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                    <span style="font-size:0.88rem;font-weight:700;color:var(--color-gray-900)">📦 在庫・混雑状況</span>
+                    <span class="badge badge-green">連携中</span>
+                  </div>
+                  <p style="font-size:0.77rem;color:var(--color-gray-600);margin-bottom:8px">食材在庫・提供状況・KDSキューなど、リアルタイムの店舗状況をAIに送信します。</p>
+                  <div style="display:flex;flex-wrap:wrap;gap:5px">
+                    <span class="badge badge-green" style="font-size:0.68rem">食材在庫</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">提供状況</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">KDSキュー</span>
+                    <span class="badge badge-green" style="font-size:0.68rem">リアルタイム</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 顧客履歴 -->
+            <div style="border:2px solid var(--color-gray-200);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:18px">
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <input type="checkbox" id="chk-customer" style="accent-color:var(--color-primary);width:16px;height:16px;margin-top:2px" onchange="toggleCustomerWarning(this)">
+                <div style="flex:1">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                    <span style="font-size:0.88rem;font-weight:700;color:var(--color-gray-900)">👤 顧客履歴</span>
+                    <span class="badge badge-gray">未連携</span>
+                  </div>
+                  <p style="font-size:0.77rem;color:var(--color-gray-600);margin-bottom:8px">過去注文・アレルギー情報・好みなど、お客様の個別情報をAIに送信します。</p>
+                  <div style="display:flex;flex-wrap:wrap;gap:5px">
+                    <span class="badge badge-gray" style="font-size:0.68rem">過去注文</span>
+                    <span class="badge badge-gray" style="font-size:0.68rem">アレルギー情報</span>
+                    <span class="badge badge-gray" style="font-size:0.68rem">好み</span>
+                    <span class="badge badge-gray" style="font-size:0.68rem">パーソナライズ</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- メニューカテゴリ除外設定 -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <h3 style="font-size:0.82rem;font-weight:700;color:var(--color-gray-700);margin:0">🗂 メニューカテゴリ除外設定</h3>
+              <span style="font-size:0.72rem;color:var(--color-gray-400)">メニュー情報が有効な場合のみ</span>
+            </div>
+            <div class="info-box yellow" style="margin-bottom:10px">
+              <strong>カテゴリ別について：</strong> チェックを外したカテゴリはAIに連携されません。Takeout専用メニューや展示品など、AI応答に不要なカテゴリを除外してください。
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <button class="btn btn-sm btn-secondary" onclick="selectAllCats(true)">すべて選択</button>
+              <button class="btn btn-sm btn-secondary" onclick="selectAllCats(false)">すべて解除</button>
+            </div>
+
+            <div class="cat-grid" id="cat-grid">
+              <div class="cat-card checked" onclick="toggleCat(this)">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" checked style="accent-color:var(--color-success)"> <span class="cat-card-title">🌟 おすすめメニュー</span>
+                </label>
+                <div class="cat-card-count">12件</div>
+                <div class="cat-card-desc">人気・おすすめな王道メニュー</div>
+              </div>
+              <div class="cat-card checked" onclick="toggleCat(this)">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" checked style="accent-color:var(--color-success)"> <span class="cat-card-title">🍽️ 定番メニュー</span>
+                </label>
+                <div class="cat-card-count">42件</div>
+                <div class="cat-card-desc">通常提供している定番商品</div>
+              </div>
+              <div class="cat-card checked" onclick="toggleCat(this)">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" checked style="accent-color:var(--color-success)"> <span class="cat-card-title">🎌 期間限定メニュー</span>
+                </label>
+                <div class="cat-card-count">8件</div>
+                <div class="cat-card-desc">季節・イベント限定商品</div>
+              </div>
+              <div class="cat-card checked" onclick="toggleCat(this)">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" checked style="accent-color:var(--color-success)"> <span class="cat-card-title">🍹 ドリンク</span>
+                </label>
+                <div class="cat-card-count">23件</div>
+                <div class="cat-card-desc">アルコール・ソフトドリンク</div>
+              </div>
+              <div class="cat-card excluded" onclick="toggleCat(this)">
+                <span class="cat-exclude-badge"><span class="badge badge-red" style="font-size:0.65rem">除外</span></span>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" style="accent-color:var(--color-danger)"> <span class="cat-card-title">🥡 Takeout専用</span>
+                </label>
+                <div class="cat-card-count">5件</div>
+                <div class="cat-card-desc">持ち帰り専用メニュー</div>
+              </div>
+              <div class="cat-card excluded" onclick="toggleCat(this)">
+                <span class="cat-exclude-badge"><span class="badge badge-red" style="font-size:0.65rem">除外</span></span>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" style="accent-color:var(--color-danger)"> <span class="cat-card-title">📦 廃・限品</span>
+                </label>
+                <div class="cat-card-count">3件</div>
+                <div class="cat-card-desc">廃番・近く廃番の予定品</div>
+              </div>
+              <div class="cat-card checked" onclick="toggleCat(this)">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" checked style="accent-color:var(--color-success)"> <span class="cat-card-title">🍮 デザート</span>
+                </label>
+                <div class="cat-card-count">10件</div>
+                <div class="cat-card-desc">スイーツ・デザート</div>
+              </div>
+              <div class="cat-card excluded" onclick="toggleCat(this)">
+                <span class="cat-exclude-badge"><span class="badge badge-red" style="font-size:0.65rem">除外</span></span>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:6px">
+                  <input type="checkbox" style="accent-color:var(--color-danger)"> <span class="cat-card-title">👥 スタッフ専用</span>
+                </label>
+                <div class="cat-card-count">4件</div>
+                <div class="cat-card-desc">従業員専用メニュー</div>
+              </div>
+            </div>
+
+            <div class="info-box yellow" style="margin-top:12px">
+              ⚠️ <strong>注意：</strong>除外したカテゴリはAIに送信されないため、お客様がそのカテゴリについて質問しても正確な回答ができません。
+            </div>
+
+            <!-- サマリー -->
+            <div style="margin-top:20px">
+              <h3 style="font-size:0.82rem;font-weight:700;color:var(--color-gray-700);margin-bottom:12px">連携データサマリー</h3>
+              <div class="data-summary">
+                <div class="data-summary-item">
+                  <div class="data-summary-val" style="color:var(--color-primary)" id="sum-types">2</div>
+                  <div class="data-summary-label">データタイプ連携中</div>
+                </div>
+                <div class="data-summary-item">
+                  <div class="data-summary-val" style="color:var(--color-success)" id="sum-active">5</div>
+                  <div class="data-summary-label">カテゴリ有効</div>
+                </div>
+                <div class="data-summary-item">
+                  <div class="data-summary-val" style="color:var(--color-danger)" id="sum-excluded">3</div>
+                  <div class="data-summary-label">カテゴリ除外</div>
+                </div>
+                <div class="data-summary-item">
+                  <div class="data-summary-val" style="color:var(--color-gray-800)">95</div>
+                  <div class="data-summary-label">対象商品数</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:space-between;margin-top:16px">
+              <button class="btn btn-secondary" onclick="resetCats()">リセット</button>
+              <button class="btn btn-primary" onclick="handleSave()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                設定を保存
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /pane-data -->
+
+
+      <!-- ═══════════════════════════════════
+           TAB 4 — おすすめエンジン設定  (A1_014)
+      ═══════════════════════════════════ -->
+      <div class="tab-pane" id="pane-engine">
+
+        <div class="section-card">
+          <div class="section-card-header"><span>😊</span><span class="section-card-title">おすすめエンジン設定</span></div>
+          <div class="section-card-body" style="display:flex;flex-direction:column;gap:22px">
+
+            <!-- タグ優先順位 -->
+            <div>
+              <label class="form-label">タグ優先順位 <span style="font-size:0.72rem;color:var(--color-gray-400);font-weight:400">— ドラッグ＆ドロップで順番を入れ替え</span></label>
+              <div class="tag-priority" id="tag-priority">
+                <div class="tag-pill" draggable="true">① おすすめ</div>
+                <span class="tag-arrow">→</span>
+                <div class="tag-pill" draggable="true" style="background:#8b5cf6">② 人気</div>
+                <span class="tag-arrow">→</span>
+                <div class="tag-pill" draggable="true" style="background:#10b981">③ 早出し</div>
+                <span class="tag-arrow">→</span>
+                <div class="tag-pill" draggable="true" style="background:#f59e0b">④ カスタマイズ可</div>
+              </div>
+            </div>
+
+            <!-- 店舗状態別レコメンド -->
+            <div>
+              <label class="form-label">店舗状態別レコメンド</label>
+              <p class="form-hint" style="margin-bottom:10px">店舗状態ごとのメニュー推薦ルールを設定します。（店舗状態はダッシュボード/POS画面から切り替えます）</p>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div class="info-box green"><strong>通常モード</strong><br>全てのメニューから通常どおり推薦する</div>
+                <div class="info-box orange">
+                  <strong>混雑モード</strong>
+                  <ul>
+                    <li>提供時間カテゴリ「短い」「普通」のメニューを優先</li>
+                    <li>メニューの「混雑時は推薦しない」フラグがONのものは除外</li>
+                  </ul>
+                </div>
+                <div class="info-box pink">
+                  <strong>ラストオーダーモード</strong>
+                  <ul>
+                    <li>ドリンク＋提供時間カテゴリ「短い」のみが推薦対象</li>
+                    <li>カスタマイズの変更数は1件までに制限</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- パーソナライズ設定 -->
+            <div>
+              <label class="form-label">👤 パーソナライズ設定（顧客履歴）</label>
+              <p class="form-hint" style="margin-bottom:14px">過去の注文履歴に基づいて、どの程度パーソナライズするかを設定します。</p>
+
+              <div style="background:var(--color-gray-50);border:1px solid var(--color-gray-200);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:16px">
+
+                <!-- 再注文優先度 -->
+                <div>
+                  <label class="form-label" style="font-size:0.82rem">■ 再注文メニューの優先度</label>
+                  <p class="form-hint">過去に注文したことがあるメニューを</p>
+                  <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
+                    <input type="range" min="0" max="100" value="70" id="reorder-slider" oninput="document.getElementById('reorder-val').textContent=this.value+'%'" style="flex:1">
+                    <span id="reorder-val" style="font-size:1rem;font-weight:800;color:var(--color-primary);min-width:48px">70%</span>
+                  </div>
+                  <p class="form-hint"><strong>70%</strong> の割合で優先的に推薦する（残り 30% は新しい/まだ注文していないメニューから推薦）</p>
+                </div>
+
+                <!-- 連続推薦制限 -->
+                <div>
+                  <label class="form-label" style="font-size:0.82rem">■ 同一メニューの連続推薦制限</label>
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                    <span style="font-size:0.8rem;color:var(--color-gray-700)">過去</span>
+                    <input type="number" class="form-control" value="7" style="width:65px">
+                    <span style="font-size:0.8rem;color:var(--color-gray-700)">日以内に注文済みのメニューは</span>
+                  </div>
+                  <div style="display:flex;gap:16px">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                      <input type="radio" name="repeat-rule" style="accent-color:var(--color-primary)"> 推薦しない
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                      <input type="radio" name="repeat-rule" checked style="accent-color:var(--color-primary)"> 推薦頻度を下げる
+                    </label>
+                  </div>
+                </div>
+
+                <!-- NGメニュー -->
+                <div>
+                  <label class="form-label" style="font-size:0.82rem">■ NGメニュー・NGタグ</label>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;cursor:pointer">
+                    <input type="checkbox" checked style="accent-color:var(--color-primary)">
+                    顧客がNGと登録したメニュー／タグは推薦対象から除外する
+                  </label>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- 在庫連動レコメンド -->
+            <div>
+              <label class="form-label">📦 在庫連動レコメンド</label>
+              <div style="background:var(--color-gray-50);border:1px solid var(--color-gray-200);border-radius:var(--radius-lg);padding:16px;display:flex;flex-direction:column;gap:16px">
+
+                <div>
+                  <label class="form-label" style="font-size:0.82rem">■ 売り切れメニュー</label>
+                  <p class="form-hint">在庫が0のメニュー</p>
+                  <div style="display:flex;gap:16px;margin-top:6px">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                      <input type="radio" name="soldout-rule" checked style="accent-color:var(--color-primary)"> 推薦しない
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                      <input type="radio" name="soldout-rule" style="accent-color:var(--color-primary)"> 注文メッセージ付きで推薦を許可する（実験的）
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="form-label" style="font-size:0.82rem">■ 在庫過多メニューの優先度</label>
+                  <p class="form-hint">在庫が「在庫過多」閾値を超えているメニューの推薦優先度</p>
+                  <div style="display:flex;align-items:center;gap:12px;margin:10px 0">
+                    <span style="font-size:0.72rem;color:var(--color-gray-400)">0</span>
+                    <input type="range" min="0" max="100" value="50" id="overstock-slider" oninput="document.getElementById('overstock-val').textContent=this.value" style="flex:1">
+                    <span style="font-size:0.72rem;color:var(--color-gray-400)">100</span>
+                  </div>
+                  <p class="form-hint">現在値：<strong id="overstock-val">50</strong>（0：通常どおり、100：積極的に推薦）</p>
+                </div>
+
+                <div>
+                  <label class="form-label" style="font-size:0.82rem">■ 在庫過多の判定</label>
+                  <label style="display:flex;align-items:center;gap:8px;font-size:0.8rem;cursor:pointer;margin-bottom:8px">
+                    <input type="checkbox" style="accent-color:var(--color-primary)">「在庫過多」フラグをメニューごとに手動設定
+                  </label>
+                  <div style="font-size:0.78rem;color:var(--color-gray-500);margin-bottom:8px">または</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:0.8rem;color:var(--color-gray-700)">在庫数</span>
+                    <input type="number" class="form-control" value="50" style="width:70px">
+                    <span style="font-size:0.8rem;color:var(--color-gray-700)">食以上の場合に自動的に「在庫過多」とみなす</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- 天気による調整 -->
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:16px;background:var(--color-gray-50);border:1px solid var(--color-gray-200);border-radius:var(--radius-lg)">
+              <div style="flex:1">
+                <div style="font-size:0.87rem;font-weight:600;color:var(--color-gray-800);margin-bottom:4px">🌤️ 天気によるメニュー推薦を調整</div>
+                <div style="font-size:0.78rem;color:var(--color-gray-500);margin-bottom:6px">ONにすると、現在の天気情報をもとにAIメニュー推薦を自動調整します。</div>
+                <div style="font-size:0.75rem;color:var(--color-gray-500)">例）寒い日 → 温かい飲み物・さっぱり系 　雨の日 → 温かい和食・スープ系</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- 表示件数 -->
+            <div>
+              <label class="form-label">📊 表示件数</label>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="display-count" checked style="accent-color:var(--color-primary)"> 3品（シンプル・少量表示）
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="display-count" style="accent-color:var(--color-primary)"> 5品（標準）
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="display-count" style="accent-color:var(--color-primary)"> 8品（たくさん表示）
+                </label>
+              </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end">
+              <button class="btn btn-primary" onclick="handleSave()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                保存する
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /pane-engine -->
+
+      <!-- Bottom nav -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px">
+        <a href="A1_010.html" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          前のステップ: 通知・LINE設定
+        </a>
+        <a href="A1_015.html" class="btn btn-primary">
+          次のステップ: デバイス連携設定
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+<!-- Logic modal -->
+<div class="modal-overlay" id="logic-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">会話ロジック追加</span>
+      <button class="modal-close" onclick="closeLogicModal()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px">
+      <div class="form-group" style="margin:0">
+        <label class="form-label">質問キーワード <span class="required">*</span></label>
+        <input type="text" class="form-control" id="logic-keyword" placeholder="例：アレルギー、駐車場、Wi-Fi">
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">タイプ</label>
+        <select class="form-control" style="max-width:200px">
+          <option selected>固定回答</option>
+          <option>AI生成回答</option>
+          <option>リダイレクト</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0">
+        <label class="form-label">AI回答テンプレート <span class="required">*</span></label>
+        <textarea class="form-control" id="logic-answer" rows="4" placeholder="例：申し訳ありませんが、当店には駐車場はございません。近隣のコインパーキングをご利用ください。"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeLogicModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="addLogicRow()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  設定を保存しました
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'ai-setting' });
+
+  /* ── Tab switch ── */
+  const TAB_IDS = ['basic','logic','data','engine'];
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + id));
+    location.hash = id;
+  }
+
+  /* ── Prompt language tabs ── */
+  const PROMPT_IDS = ['prompt-ja','prompt-en','prompt-vi'];
+  function switchLangTab(btn, _) {
+    const bar = btn.closest('.lang-tab-bar');
+    bar.querySelectorAll('.lang-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    PROMPT_IDS.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    const target = document.getElementById(_);
+    if (target) target.style.display = '';
+  }
+
+  function switchLogicLang(_) { /* lang filter placeholder */ }
+
+  /* ── Test chat ── */
+  const MOCK_REPLIES = [
+    'いらっしゃいませ！何かご注文はございますか？',
+    '本日のおすすめは「焼き鳥セット」です！',
+    'ただいまご確認いたします。少々お待ちください。',
+    'ありがとうございます。他にご注文はございますか？',
+    'アレルギーについてのご質問ですね。スタッフを呼んでまいります。'
+  ];
+  let replyIdx = 0;
+  function sendTest() {
+    const input = document.getElementById('test-input');
+    const log   = document.getElementById('test-chat-log');
+    if (!input.value.trim()) return;
+    log.innerHTML += `<div style="text-align:right"><span style="background:var(--color-primary);color:#fff;padding:5px 10px;border-radius:10px 10px 0 10px;font-size:0.8rem;display:inline-block">${input.value}</span></div>`;
+    const reply = MOCK_REPLIES[replyIdx++ % MOCK_REPLIES.length];
+    setTimeout(() => {
+      log.innerHTML += `<div style="text-align:left"><span style="background:var(--color-gray-100);color:var(--color-gray-800);padding:5px 10px;border-radius:10px 10px 10px 0;font-size:0.8rem;display:inline-block">🤖 ${reply}</span></div>`;
+      log.scrollTop = log.scrollHeight;
+    }, 500);
+    input.value = '';
+    log.scrollTop = log.scrollHeight;
+  }
+
+  /* ── Logic modal ── */
+  function openLogicModal()  { document.getElementById('logic-modal').classList.add('open'); }
+  function closeLogicModal() { document.getElementById('logic-modal').classList.remove('open'); }
+  function addLogicRow() {
+    const kw  = document.getElementById('logic-keyword').value.trim();
+    const ans = document.getElementById('logic-answer').value.trim();
+    if (!kw || !ans) return alert('キーワードと回答を入力してください');
+    const tbody = document.getElementById('logic-tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${kw}</strong></td>
+      <td>${ans}</td>
+      <td><span class="badge badge-yellow">固定回答</span></td>
+      <td><div style="display:flex;gap:4px">
+        <button class="btn btn-sm" style="background:#f97316;color:#fff;padding:5px 9px" onclick="editLogicRow(this)">✏️</button>
+        <button class="btn btn-sm btn-secondary" onclick="this.closest('tr').remove()">🗑</button>
+      </div></td>`;
+    tbody.appendChild(tr);
+    document.getElementById('logic-keyword').value = '';
+    document.getElementById('logic-answer').value  = '';
+    closeLogicModal();
+  }
+  function editLogicRow(btn) {
+    const tr   = btn.closest('tr');
+    const kw   = tr.cells[0].querySelector('strong').textContent;
+    const ans  = tr.cells[1].textContent;
+    document.getElementById('logic-keyword').value = kw;
+    document.getElementById('logic-answer').value  = ans;
+    tr.remove();
+    openLogicModal();
+  }
+
+  /* ── Category cards ── */
+  function toggleCat(card) {
+    const chk = card.querySelector('input[type=checkbox]');
+    const nowChecked = !chk.checked;
+    chk.checked = nowChecked;
+    card.classList.toggle('checked',   nowChecked);
+    card.classList.toggle('excluded', !nowChecked);
+    chk.style.accentColor = nowChecked ? 'var(--color-success)' : 'var(--color-danger)';
+    let badge = card.querySelector('.cat-exclude-badge');
+    if (!nowChecked) {
+      if (!badge) { badge = document.createElement('span'); badge.className='cat-exclude-badge'; badge.innerHTML='<span class="badge badge-red" style="font-size:0.65rem">除外</span>'; card.appendChild(badge); }
+    } else { if (badge) badge.remove(); }
+    updateSummary();
+  }
+  function selectAllCats(on) {
+    document.querySelectorAll('.cat-card').forEach(c => { const chk = c.querySelector('input'); chk.checked = on; c.classList.toggle('checked',on); c.classList.toggle('excluded',!on); chk.style.accentColor = on ? 'var(--color-success)' : 'var(--color-danger)'; let b=c.querySelector('.cat-exclude-badge'); if(!on){if(!b){b=document.createElement('span');b.className='cat-exclude-badge';b.innerHTML='<span class="badge badge-red" style="font-size:0.65rem">除外</span>';c.appendChild(b);}}else{if(b)b.remove();}});
+    updateSummary();
+  }
+  function resetCats() { selectAllCats(true); }
+  function updateSummary() {
+    const cards = document.querySelectorAll('.cat-card');
+    const active = [...cards].filter(c=>c.classList.contains('checked')).length;
+    const excl   = cards.length - active;
+    document.getElementById('sum-active').textContent   = active;
+    document.getElementById('sum-excluded').textContent = excl;
+  }
+
+  /* ── Save toast ── */
+  function handleSave() {
+    const t = document.getElementById('toast');
+    t.style.display = 'flex';
+    setTimeout(() => t.style.display = 'none', 2800);
+  }
+
+  /* ── Init from hash ── */
+  const hash = location.hash.replace('#','');
+  switchTab(['basic','logic','data','engine'].includes(hash) ? hash : 'basic');
+</script>
+</body>
+</html>

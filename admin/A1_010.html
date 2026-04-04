@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>通知・メッセージ設定 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    .section-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-xl);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .section-card-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--color-gray-100);
+      background: var(--color-gray-50);
+    }
+    .section-card-title { font-size: 0.9rem; font-weight: 700; color: var(--color-gray-900); }
+    .section-card-body { padding: 20px; }
+
+    /* ── Toggle row ── */
+    .toggle-row {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--color-gray-100);
+    }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-row:first-child { padding-top: 0; }
+    .tr-label { font-size: 0.87rem; font-weight: 600; color: var(--color-gray-800); margin-bottom: 3px; }
+    .tr-desc  { font-size: 0.77rem; color: var(--color-gray-500); line-height: 1.5; }
+
+    /* ── Sub-section divider ── */
+    .sub-section {
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-lg);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .sub-section:last-child { margin-bottom: 0; }
+    .sub-section-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 16px;
+      background: var(--color-gray-50);
+      border-bottom: 1px solid var(--color-gray-200);
+    }
+    .sub-section-title { font-size: 0.85rem; font-weight: 700; color: var(--color-gray-800); display: flex; align-items: center; gap: 8px; }
+    .sub-section-body { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── Variable chips ── */
+    .var-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+    .var-chip {
+      font-size: 0.7rem; font-weight: 600;
+      padding: 2px 9px;
+      border-radius: var(--radius-full);
+      background: var(--color-primary-light);
+      color: var(--color-primary-dark);
+      cursor: pointer;
+      user-select: all;
+    }
+    .var-chip:hover { background: var(--color-primary); color: #fff; }
+
+    /* ── LINE connect card ── */
+    .line-connect-card {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      background: var(--color-success-light);
+      border: 1px solid #6ee7b7;
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+    .line-connected-label { font-size: 0.82rem; font-weight: 700; color: #065f46; display: flex; align-items: center; gap: 6px; }
+
+    /* ── Message block (toggle + textarea) ── */
+    .msg-block { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--color-gray-100); }
+    .msg-block:last-child { border-bottom: none; padding-bottom: 0; }
+    .msg-block:first-child { padding-top: 0; }
+    .msg-block-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .msg-block-label { font-size: 0.85rem; font-weight: 600; color: var(--color-gray-800); }
+    .msg-block-hint { font-size: 0.75rem; color: var(--color-gray-500); }
+    .msg-content { display: flex; flex-direction: column; gap: 8px; }
+
+    /* ── Alert setting row ── */
+    .alert-row {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+      padding: 14px 0; border-bottom: 1px solid var(--color-gray-100);
+    }
+    .alert-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .alert-row:first-child { padding-top: 0; }
+
+    /* ── Sticky bar ── */
+    .sticky-bar {
+      position: sticky; top: var(--header-height); z-index: 30;
+      background: var(--color-white); border-bottom: 1px solid var(--color-gray-200);
+      padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .sticky-bar-left { display: flex; align-items: center; gap: 12px; }
+    .sticky-bar-right { display: flex; align-items: center; gap: 8px; }
+    .step-indicator { display: flex; gap: 6px; align-items: center; }
+    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-gray-200); }
+    .step-dot.active { background: var(--color-primary); width: 20px; border-radius: 4px; }
+    .step-dot.done   { background: var(--color-success); }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky bar -->
+    <div class="sticky-bar">
+      <div class="sticky-bar-left">
+        <nav class="breadcrumb" style="margin:0">
+          <a href="index.html">ホーム</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>店舗設定</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>通知・メッセージ設定</span>
+        </nav>
+        <div class="step-indicator">
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot active"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+        </div>
+        <span style="font-size:0.72rem;color:var(--color-gray-500)">Step 4 / 6</span>
+      </div>
+      <div class="sticky-bar-right">
+        <button class="btn btn-secondary">キャンセル</button>
+        <button class="btn btn-primary" onclick="handleSave()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          設定を保存
+        </button>
+        <a href="A1_011.html" class="btn btn-outline">
+          次のステップ
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Page heading -->
+      <div style="margin-bottom:24px;">
+        <h1 class="page-title">🔔 通知・メッセージ設定</h1>
+        <p class="page-subtitle">予約リマインド、スタッフへのアラート、システムからの自動メッセージを管理します。</p>
+      </div>
+
+      <!-- ① LINE Official Account 連携 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px;color:#06c755">💬</span>
+          <span class="section-card-title">LINE Official Account 連携</span>
+        </div>
+        <div class="section-card-body">
+
+          <div class="line-connect-card">
+            <div class="line-connected-label">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              連携済み
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="if(confirm('LINE連携を解除しますか？'))alert('連携を解除しました')">連携解除</button>
+          </div>
+
+          <div class="grid grid-2" style="gap:16px;margin-bottom:14px">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">LINE Business ID（メールアドレス）</label>
+              <input type="email" class="form-control" value="admin@sakura-restaurant.com">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">LINE Channel Access Token</label>
+              <div style="position:relative">
+                <input type="password" class="form-control" id="line-token" value="sk_line_AbCdEf12345678XyZ90">
+                <button onclick="toggleToken()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--color-gray-400);font-size:0.75rem">表示</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-md);padding:10px 14px;font-size:0.77rem;color:#166534">
+            ✅ 顧客へのメッセージ送信は、LINE OAの管理と設定が必要です。
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ② 顧客向け自動メッセージ -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">💬</span>
+          <span class="section-card-title">顧客向け自動メッセージ（LINE / SMS）</span>
+        </div>
+        <div class="section-card-body" style="display:flex;flex-direction:column;gap:16px">
+
+          <!-- 予約関連メッセージ -->
+          <div class="sub-section">
+            <div class="sub-section-header">
+              <span class="sub-section-title">🍽️ 予約関連メッセージ</span>
+              <div>
+                <label class="form-label" style="font-size:0.72rem;margin:0;color:var(--color-gray-500)">送信チャンネル</label>
+                <select class="form-control" style="width:160px;font-size:0.78rem;padding:4px 10px;height:auto;display:inline-block">
+                  <option selected>LINE（優先）</option>
+                  <option>SMS</option>
+                  <option>LINE + SMS</option>
+                </select>
+              </div>
+            </div>
+            <div class="sub-section-body">
+
+              <!-- テンプレート変数 -->
+              <div>
+                <div style="font-size:0.75rem;font-weight:600;color:var(--color-gray-500);margin-bottom:6px">テンプレート変数（共通）— クリックでコピー</div>
+                <div class="var-chips">
+                  <span class="var-chip" onclick="copyVar(this)">{{予約ID}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{日時}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{人数}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{ご予約名}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{店舗名}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{キャンセル期限}}</span>
+                </div>
+              </div>
+
+              <!-- 予約確定メッセージ -->
+              <div class="msg-block">
+                <div class="msg-block-header">
+                  <div>
+                    <div class="msg-block-label">予約確定メッセージ</div>
+                    <div class="msg-block-hint">即時送信 — 予約が確定した直後に自動送信</div>
+                  </div>
+                  <label class="toggle"><input type="checkbox" checked onchange="toggleMsgContent(this,'confirm-msg')"><span class="toggle-track"></span></label>
+                </div>
+                <div class="msg-content" id="confirm-msg">
+                  <label class="form-label" style="font-size:0.78rem">予約確定メッセージ内容</label>
+                  <textarea class="form-control" rows="4">ご予約ありがとうございます。
+日時：{{日時}}　人数：{{人数}}
+で予約しました。予約ID：{{予約ID}}</textarea>
+                </div>
+              </div>
+
+              <!-- 前日リマインド -->
+              <div class="msg-block">
+                <div class="msg-block-header">
+                  <div>
+                    <div class="msg-block-label">予約前日リマインドの有効化</div>
+                    <div class="msg-block-hint">来店前日の指定時刻に自動送信</div>
+                  </div>
+                  <label class="toggle"><input type="checkbox" checked onchange="toggleMsgContent(this,'remind-msg')"><span class="toggle-track"></span></label>
+                </div>
+                <div class="msg-content" id="remind-msg">
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <label class="form-label" style="margin:0;white-space:nowrap;font-size:0.78rem">送信時間（前日日）：</label>
+                    <input type="time" class="form-control" value="18:00" style="width:120px">
+                  </div>
+                  <label class="form-label" style="font-size:0.78rem">リマインドメッセージ内容</label>
+                  <textarea class="form-control" rows="3">明日のご予約【{{予約ID}}】を承っております。ご来店をお待ちしております。
+さくらレストラン</textarea>
+                </div>
+              </div>
+
+              <!-- キャンセル変更メッセージ -->
+              <div class="msg-block">
+                <div class="msg-block-header">
+                  <div>
+                    <div class="msg-block-label">予約キャンセル変更メッセージ</div>
+                    <div class="msg-block-hint">即時送信 — キャンセル確定時に自動送信</div>
+                  </div>
+                  <label class="toggle"><input type="checkbox" checked onchange="toggleMsgContent(this,'cancel-msg')"><span class="toggle-track"></span></label>
+                </div>
+                <div class="msg-content" id="cancel-msg">
+                  <label class="form-label" style="font-size:0.78rem">キャンセルメッセージ内容</label>
+                  <textarea class="form-control" rows="3">ご予約【{{予約ID}}】のキャンセルを承りました。またのご利用をお待ちしております。</textarea>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 順番待ち・テイクアウト関連通知 -->
+          <div class="sub-section">
+            <div class="sub-section-header">
+              <span class="sub-section-title">🎫 順番待ち・テイクアウト関連通知</span>
+            </div>
+            <div class="sub-section-body">
+
+              <!-- 変数チップ -->
+              <div>
+                <div style="font-size:0.75rem;font-weight:600;color:var(--color-gray-500);margin-bottom:6px">テンプレート変数 — クリックでコピー</div>
+                <div class="var-chips">
+                  <span class="var-chip" onclick="copyVar(this)">{{残り組数}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{注文番号}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{受取番号}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{店舗名}}</span>
+                  <span class="var-chip" onclick="copyVar(this)">{{準備完了時刻}}</span>
+                </div>
+              </div>
+
+              <!-- 順番待ち呼び出し -->
+              <div class="msg-block">
+                <div class="msg-block-header">
+                  <div>
+                    <div class="msg-block-label">順番待ち呼び出し通知</div>
+                    <div class="msg-block-hint">あと指定組数になったタイミングでLINE通知</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                  <label class="form-label" style="margin:0;font-size:0.78rem;white-space:nowrap">呼び出しのタイミング（残り組数）：</label>
+                  <select class="form-control" style="width:100px">
+                    <option selected>1組</option>
+                    <option>2組</option>
+                    <option>3組</option>
+                  </select>
+                </div>
+                <label class="form-label" style="font-size:0.78rem">順番待ち呼び出しメッセージ内容</label>
+                <textarea class="form-control" rows="3">あと【{{残り組数}}】組でご案内します。お席を離れても大丈夫です。</textarea>
+              </div>
+
+              <!-- テイクアウト注文完了 -->
+              <div class="msg-block">
+                <div class="msg-block-header">
+                  <div>
+                    <div class="msg-block-label">テイクアウト注文完了メッセージ</div>
+                    <div class="msg-block-hint">注文受付時に自動送信</div>
+                  </div>
+                  <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+                </div>
+              </div>
+
+              <!-- テイクアウト完成メッセージ -->
+              <div class="msg-block">
+                <div class="msg-block-header">
+                  <div>
+                    <div class="msg-block-label">テイクアウト完成メッセージ（受取通知）</div>
+                    <div class="msg-block-hint">商品準備完了時にスタッフが手動送信</div>
+                  </div>
+                  <label class="toggle"><input type="checkbox" checked onchange="toggleMsgContent(this,'takeout-complete-msg')"><span class="toggle-track"></span></label>
+                </div>
+                <div class="msg-content" id="takeout-complete-msg">
+                  <label class="form-label" style="font-size:0.78rem">完成メッセージ内容</label>
+                  <textarea class="form-control" rows="3">ご注文番号【{{注文番号}}】のテイクアウトが完了しました。店頭でお受け取りください。</textarea>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ③ スタッフ向けアラート・通知 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">👥</span>
+          <span class="section-card-title">スタッフ向けアラート・通知</span>
+        </div>
+        <div class="section-card-body">
+
+          <!-- 混雑アラート -->
+          <div class="alert-row">
+            <div style="flex:1">
+              <div class="tr-label">混雑発生時お客様 混雑アラート</div>
+              <div class="tr-desc">一定時間以上注文が未完成の場合にホールスタッフへアラートします。</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+                <label class="form-label" style="margin:0;white-space:nowrap;font-size:0.78rem">警告先までの時間（分）：</label>
+                <input type="number" class="form-control" value="30" style="width:80px">
+                <span class="form-hint" style="margin:0">分</span>
+              </div>
+              <div class="form-hint" style="margin-top:6px">30分以上注文が未完成の場合にホールスタッフへアラートします。</div>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+          </div>
+
+          <!-- KDS アラート -->
+          <div class="alert-row">
+            <div>
+              <div class="tr-label">KDSアラート（KDS連携）</div>
+              <div class="tr-desc">キッチンディスプレイの調理時間超過アラートをスタッフに転送します。</div>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+          </div>
+
+          <!-- 会計遅延アラート -->
+          <div class="alert-row">
+            <div>
+              <div class="tr-label">会計遅延アラート（POS連携）</div>
+              <div class="tr-desc">会計待ち時間が長くなった際にレジ担当へ通知します。</div>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+          </div>
+
+          <!-- シフト申請リマインド -->
+          <div class="alert-row" style="border-bottom:none;padding-bottom:0">
+            <div style="flex:1">
+              <div class="tr-label">シフト申請締め切りのリマインド</div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+                <label class="form-label" style="margin:0;white-space:nowrap;font-size:0.78rem">締め切り前日数：</label>
+                <input type="number" class="form-control" value="1" style="width:70px">
+                <span class="form-hint" style="margin:0">日前</span>
+              </div>
+              <div class="form-hint" style="margin-top:6px">締め切り1日前にスタッフへ送ります。</div>
+            </div>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Bottom nav -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">
+        <a href="A1_003.html" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          前のステップ: 機能別詳細設定
+        </a>
+        <a href="A1_011.html" class="btn btn-primary">
+          次のステップ: AI・自動化設定
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-wrapper -->
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  設定を保存しました
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'notification' });
+
+  /* toggle textarea visibility when parent toggle flipped */
+  function toggleMsgContent(checkbox, id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = checkbox.checked ? '' : 'none';
+  }
+
+  /* copy variable chip text */
+  function copyVar(el) {
+    navigator.clipboard.writeText(el.textContent).then(() => {
+      el.textContent = '✓ コピー済';
+      setTimeout(() => el.textContent = el.getAttribute('data-orig') || el.textContent.replace('✓ コピー済', el._orig || el.textContent), 1200);
+    });
+    el._orig = el.textContent;
+  }
+
+  /* show/hide token */
+  function toggleToken() {
+    const inp = document.getElementById('line-token');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  }
+
+  function handleSave() {
+    const t = document.getElementById('toast');
+    t.style.display = 'flex';
+    setTimeout(() => t.style.display = 'none', 2800);
+  }
+</script>
+</body>
+</html>

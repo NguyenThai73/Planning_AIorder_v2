@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基本情報設定 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Page-specific extras ── */
+    .section-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-xl);
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .section-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--color-gray-100);
+      background: var(--color-gray-50);
+    }
+    .section-card-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--color-gray-900);
+    }
+    .section-card-body {
+      padding: 20px;
+    }
+    .time-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .time-row select.form-control { flex: 1.5; }
+    .time-row input[type="time"].form-control { flex: 1; }
+    .time-sep {
+      font-size: 0.8rem;
+      color: var(--color-gray-400);
+      white-space: nowrap;
+    }
+    .time-remove {
+      width: 32px; height: 32px;
+      border-radius: var(--radius-md);
+      background: var(--color-danger-light);
+      color: var(--color-danger);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background var(--transition);
+    }
+    .time-remove:hover { background: var(--color-danger); color: #fff; }
+
+    .holiday-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .holiday-row select.form-control { flex: 1; }
+
+    .sticky-bar {
+      position: sticky;
+      top: var(--header-height);
+      z-index: 30;
+      background: var(--color-white);
+      border-bottom: 1px solid var(--color-gray-200);
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .sticky-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sticky-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-indicator {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--color-gray-200);
+    }
+    .step-dot.active { background: var(--color-primary); width: 20px; border-radius: 4px; }
+    .step-dot.done { background: var(--color-success); }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <!-- Sidebar placeholder -->
+  <div id="sidebar-placeholder"></div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <!-- Header placeholder -->
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky action bar -->
+    <div class="sticky-bar">
+      <div class="sticky-bar-left">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb" style="margin:0">
+          <a href="index.html">ホーム</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>店舗設定</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>基本情報設定</span>
+        </nav>
+        <div class="step-indicator">
+          <div class="step-dot active"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+        </div>
+        <span style="font-size:0.72rem; color:var(--color-gray-500)">Step 1 / 6</span>
+      </div>
+      <div class="sticky-bar-right">
+        <button class="btn btn-secondary" onclick="window.history.back()">キャンセル</button>
+        <button class="btn btn-primary" onclick="handleSave()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          設定を保存
+        </button>
+        <a href="A1_002.html" class="btn btn-outline">
+          次のステップ
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Page heading -->
+      <div style="margin-bottom:24px;">
+        <h1 class="page-title">🏪 店舗基本情報設定</h1>
+        <p class="page-subtitle">店舗の住所、連絡先、営業時間など、営業の根幹となる情報を設定します。</p>
+      </div>
+
+      <!-- ① 店舗情報マスター -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🏪</span>
+          <span class="section-card-title">店舗情報マスター</span>
+        </div>
+        <div class="section-card-body">
+          <div class="form-group">
+            <label class="form-label">店舗名 <span class="required">*</span></label>
+            <input type="text" class="form-control" value="さくらレストラン 新宿本店" placeholder="例：さくらレストラン 新宿本店">
+          </div>
+
+          <div class="grid grid-2" style="gap:16px;">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">住所 (郵便番号) <span class="required">*</span></label>
+              <input type="text" class="form-control" value="160-0023" placeholder="160-0023">
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">電話番号 <span class="required">*</span></label>
+              <input type="tel" class="form-control" value="03-1234-5678" placeholder="03-1234-5678">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:16px;">
+            <label class="form-label">都道府県・市区町村 <span class="required">*</span></label>
+            <input type="text" class="form-control" value="東京都新宿区西新宿 1-1-1" placeholder="東京都新宿区西新宿 1-1-1">
+          </div>
+        </div>
+      </div>
+
+      <!-- ② 営業時間設定 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🕐</span>
+          <span class="section-card-title">営業時間設定（曜日・時間帯別）</span>
+        </div>
+        <div class="section-card-body">
+          <div id="business-hours">
+
+            <div class="time-row">
+              <select class="form-control">
+                <option selected>月曜〜金曜</option>
+                <option>月曜〜土曜</option>
+                <option>月曜〜日曜</option>
+                <option>土曜・日曜</option>
+                <option>毎日</option>
+              </select>
+              <input type="time" class="form-control" value="11:00">
+              <span class="time-sep">〜</span>
+              <input type="time" class="form-control" value="15:00">
+              <button class="time-remove" title="削除">×</button>
+            </div>
+
+            <div class="time-row">
+              <select class="form-control">
+                <option selected>月曜〜金曜</option>
+                <option>月曜〜土曜</option>
+                <option>月曜〜日曜</option>
+                <option>土曜・日曜</option>
+                <option>毎日</option>
+              </select>
+              <input type="time" class="form-control" value="17:00">
+              <span class="time-sep">〜</span>
+              <input type="time" class="form-control" value="23:00">
+              <button class="time-remove" title="削除">×</button>
+            </div>
+
+          </div>
+
+          <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="addTimeRow()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            営業時間を追加
+          </button>
+        </div>
+      </div>
+
+      <!-- ③ 定休日設定 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🚫</span>
+          <span class="section-card-title">定休日設定</span>
+        </div>
+        <div class="section-card-body">
+          <div id="holidays">
+
+            <div class="holiday-row">
+              <select class="form-control">
+                <option selected>毎週月曜日</option>
+                <option>毎週火曜日</option>
+                <option>毎週水曜日</option>
+                <option>毎週木曜日</option>
+                <option>毎週金曜日</option>
+                <option>毎週土曜日</option>
+                <option>毎週日曜日</option>
+                <option>年末年始 (12/30 - 1/3)</option>
+                <option>お盆期間</option>
+              </select>
+              <button class="time-remove" title="削除">×</button>
+            </div>
+
+            <div class="holiday-row">
+              <select class="form-control">
+                <option>毎週月曜日</option>
+                <option>毎週火曜日</option>
+                <option>毎週水曜日</option>
+                <option>毎週木曜日</option>
+                <option>毎週金曜日</option>
+                <option>毎週土曜日</option>
+                <option>毎週日曜日</option>
+                <option selected>年末年始 (12/30 - 1/3)</option>
+                <option>お盆期間</option>
+              </select>
+              <button class="time-remove" title="削除">×</button>
+            </div>
+
+          </div>
+
+          <button class="btn btn-outline btn-sm" style="margin-top:8px" onclick="addHolidayRow()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            定休日を追加
+          </button>
+        </div>
+      </div>
+
+      <!-- ④ 税率・通貨設定 -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">💴</span>
+          <span class="section-card-title">税率・通貨設定</span>
+        </div>
+        <div class="section-card-body">
+          <div class="grid grid-3" style="gap:16px;">
+            <div class="form-group" style="margin:0">
+              <label class="form-label">標準税率 (%)</label>
+              <input type="number" class="form-control" value="10" min="0" max="100" step="0.1">
+              <div class="form-hint">通常の飲食・商品</div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">軽減税率 (%)</label>
+              <input type="number" class="form-control" value="8" min="0" max="100" step="0.1">
+              <div class="form-hint">テイクアウト・食料品</div>
+            </div>
+            <div class="form-group" style="margin:0">
+              <label class="form-label">通貨単位</label>
+              <select class="form-control">
+                <option selected>JPY（円）</option>
+                <option>USD（ドル）</option>
+                <option>EUR（ユーロ）</option>
+                <option>TWD（台湾ドル）</option>
+                <option>VND（ベトナムドン）</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav -->
+      <div style="display:flex; justify-content:space-between; align-items:center; padding-top:8px;">
+        <a href="index.html" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          概要へ戻る
+        </a>
+        <a href="A1_002.html" class="btn btn-primary">
+          次のステップ: 営業モード設定
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-wrapper -->
+
+<!-- Save toast -->
+<div id="toast" style="
+  position:fixed; bottom:24px; right:24px; z-index:999;
+  background:#10b981; color:#fff; padding:12px 20px; border-radius:10px;
+  font-size:0.85rem; font-weight:600; box-shadow:0 4px 16px rgba(0,0,0,.15);
+  display:none; align-items:center; gap:8px;
+">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  設定を保存しました
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'basic-info' });
+
+  /* ── Add time row ── */
+  function addTimeRow() {
+    const container = document.getElementById('business-hours');
+    const row = document.createElement('div');
+    row.className = 'time-row';
+    row.innerHTML = `
+      <select class="form-control">
+        <option>月曜〜金曜</option>
+        <option>月曜〜土曜</option>
+        <option>月曜〜日曜</option>
+        <option>土曜・日曜</option>
+        <option>毎日</option>
+      </select>
+      <input type="time" class="form-control" value="10:00">
+      <span class="time-sep">〜</span>
+      <input type="time" class="form-control" value="22:00">
+      <button class="time-remove" title="削除" onclick="this.closest('.time-row').remove()">×</button>
+    `;
+    container.appendChild(row);
+  }
+
+  /* ── Add holiday row ── */
+  function addHolidayRow() {
+    const container = document.getElementById('holidays');
+    const row = document.createElement('div');
+    row.className = 'holiday-row';
+    row.innerHTML = `
+      <select class="form-control">
+        <option>毎週月曜日</option>
+        <option>毎週火曜日</option>
+        <option>毎週水曜日</option>
+        <option>毎週木曜日</option>
+        <option>毎週金曜日</option>
+        <option>毎週土曜日</option>
+        <option>毎週日曜日</option>
+        <option>年末年始 (12/30 - 1/3)</option>
+        <option>お盆期間</option>
+      </select>
+      <button class="time-remove" title="削除" onclick="this.closest('.holiday-row').remove()">×</button>
+    `;
+    container.appendChild(row);
+  }
+
+  /* ── Wire existing remove buttons ── */
+  document.querySelectorAll('.time-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.time-row, .holiday-row').remove();
+    });
+  });
+
+  /* ── Save toast ── */
+  function handleSave() {
+    const toast = document.getElementById('toast');
+    toast.style.display = 'flex';
+    setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+</script>
+</body>
+</html>

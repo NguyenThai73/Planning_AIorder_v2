@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>デバイス連携設定 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Section card ── */
+    .section-card { background:var(--color-white); border:1px solid var(--color-gray-200); border-radius:var(--radius-xl); margin-bottom:20px; box-shadow:var(--shadow-sm); overflow:hidden; }
+    .section-card-header { display:flex; align-items:center; gap:10px; padding:13px 20px; border-bottom:1px solid var(--color-gray-100); background:var(--color-gray-50); }
+    .section-card-title  { font-size:0.9rem; font-weight:700; color:var(--color-gray-900); }
+    .section-card-body   { padding:20px 22px; }
+
+    /* ── Printer card grid ── */
+    .printer-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+    .printer-card { border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:16px; background:var(--color-white); }
+    .printer-card-title { font-size:0.85rem; font-weight:700; color:var(--color-gray-800); margin-bottom:12px; }
+    .printer-field { display:flex; flex-direction:column; gap:3px; margin-bottom:10px; }
+    .printer-field label { font-size:0.72rem; font-weight:600; color:var(--color-gray-500); text-transform:uppercase; letter-spacing:.04em; }
+    .printer-field .status-ok  { display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; font-weight:600; color:#059669; }
+    .printer-field .status-err { display:inline-flex; align-items:center; gap:4px; font-size:0.8rem; font-weight:600; color:var(--color-danger); }
+    .printer-field .status-dot { width:7px; height:7px; border-radius:50%; background:#10b981; flex-shrink:0; }
+    .printer-field .status-dot.err { background:var(--color-danger); }
+    .printer-ip { font-family:monospace; font-size:0.85rem; color:var(--color-gray-700); }
+
+    /* ── QR block ── */
+    .qr-block { border:1px dashed var(--color-gray-300); border-radius:var(--radius-lg); padding:16px; background:var(--color-gray-50); margin-bottom:16px; }
+    .qr-block-title { font-size:0.83rem; font-weight:700; color:var(--color-gray-800); margin-bottom:10px; }
+
+    /* ── Category group assign ── */
+    .group-assign-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+    .group-assign-item label { font-size:0.75rem; font-weight:600; color:var(--color-gray-500); display:block; margin-bottom:5px; }
+
+    /* ── KDS card ── */
+    .kds-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px; }
+    .kds-card { border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:16px; background:var(--color-white); }
+    .kds-card-title { font-size:0.83rem; font-weight:700; color:var(--color-gray-800); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--color-gray-100); }
+    .kds-field { margin-bottom:12px; }
+    .kds-field:last-child { margin-bottom:0; }
+    .kds-field label { font-size:0.72rem; font-weight:600; color:var(--color-gray-500); display:block; margin-bottom:5px; }
+
+    /* ── Device ID row ── */
+    .device-id-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    .device-id-item { background:var(--color-gray-50); border:1px solid var(--color-gray-200); border-radius:var(--radius-md); padding:12px 14px; }
+    .device-id-label { font-size:0.72rem; font-weight:600; color:var(--color-gray-500); margin-bottom:6px; }
+
+    /* ── Display section ── */
+    .display-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .display-col { flex:1; min-width:180px; }
+    .display-col label.sub { font-size:0.75rem; font-weight:600; color:var(--color-gray-500); display:block; margin-bottom:6px; }
+
+    /* ── Sticky bar ── */
+    .sticky-bar { position:sticky; top:var(--header-height); z-index:30; background:var(--color-white); border-bottom:1px solid var(--color-gray-200); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .step-dot { width:8px; height:8px; border-radius:50%; background:var(--color-gray-200); }
+    .step-dot.done   { background:var(--color-success); }
+    .step-dot.active { background:var(--color-primary); width:20px; border-radius:4px; }
+
+    /* ── Template modal ── */
+    .tpl-modal-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .tpl-preview { background:var(--color-gray-50); border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); padding:16px; }
+    .tpl-preview-title { font-size:0.78rem; font-weight:700; color:var(--color-gray-600); margin-bottom:12px; text-align:center; }
+    .receipt-preview { background:var(--color-white); border:1px solid var(--color-gray-300); border-radius:8px; padding:14px; font-size:0.72rem; line-height:1.8; font-family:monospace; }
+    .receipt-preview .r-title { text-align:center; font-weight:700; font-size:0.8rem; border-bottom:1px dashed #ccc; padding-bottom:6px; margin-bottom:8px; }
+    .receipt-preview .r-meta  { color:var(--color-gray-500); font-size:0.7rem; margin-bottom:6px; }
+    .receipt-preview .r-sep   { border-top:1px dashed #ccc; margin:8px 0; }
+    .receipt-preview .r-item  { display:flex; justify-content:space-between; font-weight:600; }
+    .receipt-preview .r-custom { color:#ef4444; font-size:0.68rem; padding-left:8px; }
+    .receipt-preview .r-total { font-weight:700; margin-top:4px; }
+    .receipt-preview .r-target{ color:#ef4444; font-weight:700; }
+    .receipt-preview .r-num-big { text-align:center; font-size:2rem; font-weight:900; color:#ef4444; border:2px dashed #ef4444; border-radius:6px; padding:4px 0; margin:8px 0; letter-spacing:2px; }
+    .var-chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .var-chip  { padding:4px 10px; background:var(--color-primary-light); color:var(--color-primary); border-radius:var(--radius-full); font-size:0.72rem; font-weight:600; font-family:monospace; cursor:pointer; }
+    .var-chip:hover { background:var(--color-primary); color:#fff; }
+
+    /* ── Info hint ── */
+    .info-hint { font-size:0.77rem; color:var(--color-gray-500); margin-bottom:8px; }
+
+    @media (max-width:700px) {
+      .printer-grid, .kds-grid, .device-id-grid, .group-assign-grid, .tpl-modal-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky action bar -->
+    <div class="sticky-bar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <nav class="breadcrumb" style="margin:0">
+          <a href="index.html">ホーム</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>店舗設定</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>デバイス連携設定</span>
+        </nav>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot active"></div>
+        </div>
+        <span style="font-size:0.72rem;color:var(--color-gray-500)">Step 6 / 6</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn btn-outline" onclick="checkConnections()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12.5a7 7 0 1 1 14 0"/><polyline points="12 8 12 12 14.5 14.5"/></svg>
+          接続を確認
+        </button>
+        <button class="btn btn-secondary" onclick="window.history.back()">キャンセル</button>
+        <button class="btn btn-primary" onclick="handleSave()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          設定を保存
+        </button>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- Page heading -->
+      <div style="margin-bottom:24px">
+        <h1 class="page-title">🖨️ デバイス連携設定</h1>
+        <p class="page-subtitle">プリンター、KDS、Displayなど、店舗オペレーションに必要なハードウェアの連携と設定を行います。</p>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           プリンター設定
+      ══════════════════════════════════════ -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">🖨️</span>
+          <span class="section-card-title">プリンター設定 (Printer Settings)</span>
+        </div>
+        <div class="section-card-body">
+
+          <!-- 4 printer cards -->
+          <div class="printer-grid">
+
+            <!-- 食事プリンター -->
+            <div class="printer-card">
+              <div class="printer-card-title">食事プリンター（RP-F10 / 厨房）</div>
+              <div class="printer-field">
+                <label>ステータス:</label>
+                <span class="status-ok"><span class="status-dot"></span>接続OK</span>
+              </div>
+              <div class="printer-field">
+                <label>接続IPアドレス</label>
+                <input type="text" class="form-control printer-ip" value="192.168.1.10">
+              </div>
+              <div class="printer-field" style="margin-bottom:0">
+                <label>伝票テンプレート設定</label>
+                <button class="btn btn-outline btn-sm" onclick="openModal('modal-kitchen')">テンプレート編集</button>
+              </div>
+            </div>
+
+            <!-- ドリンクプリンター -->
+            <div class="printer-card">
+              <div class="printer-card-title">ドリンクプリンター（P-D20 / バー）</div>
+              <div class="printer-field">
+                <label>ステータス:</label>
+                <span class="status-ok"><span class="status-dot"></span>接続OK</span>
+              </div>
+              <div class="printer-field">
+                <label>接続IPアドレス</label>
+                <input type="text" class="form-control printer-ip" value="192.168.1.11">
+              </div>
+              <div class="printer-field" style="margin-bottom:0">
+                <label>伝票テンプレート設定</label>
+                <button class="btn btn-outline btn-sm" onclick="openModal('modal-drink')">テンプレート編集</button>
+              </div>
+            </div>
+
+            <!-- ホールプリンター -->
+            <div class="printer-card">
+              <div class="printer-card-title">ホールプリンター（POS / レシート）</div>
+              <div class="printer-field">
+                <label>ステータス:</label>
+                <span class="status-ok"><span class="status-dot"></span>接続OK</span>
+              </div>
+              <div class="printer-field">
+                <label>接続IPアドレス</label>
+                <input type="text" class="form-control printer-ip" value="192.168.1.12">
+              </div>
+              <div class="printer-field" style="margin-bottom:0">
+                <label>伝票テンプレート設定</label>
+                <button class="btn btn-outline btn-sm" onclick="openModal('modal-hall')">テンプレート編集</button>
+              </div>
+            </div>
+
+            <!-- 発券機プリンター -->
+            <div class="printer-card">
+              <div class="printer-card-title">発券機専用プリンター（受付 / 発券）</div>
+              <div class="printer-field">
+                <label>ステータス:</label>
+                <span class="status-ok"><span class="status-dot"></span>接続OK</span>
+              </div>
+              <div class="printer-field">
+                <label>接続IPアドレス</label>
+                <input type="text" class="form-control printer-ip" value="192.168.1.13">
+              </div>
+              <div class="printer-field" style="margin-bottom:0">
+                <label>発券テンプレート設定</label>
+                <button class="btn btn-outline btn-sm" onclick="openModal('modal-ticket')">テンプレート編集</button>
+              </div>
+            </div>
+
+          </div><!-- /printer-grid -->
+
+          <!-- テイクアウト用 QRコード -->
+          <div class="qr-block">
+            <div class="qr-block-title">テイクアウト用 QRコード印刷設定</div>
+            <div class="form-group" style="margin-bottom:10px">
+              <label class="form-label" style="font-size:0.75rem">テイクアウト用 静的QRコード</label>
+              <p class="info-hint">店舗・フライヤー・レシートに記載する共通のテイクアウト注文URLです。</p>
+              <input type="text" class="form-control" value="https://order.aiorder.jp/takeout/sakura-shinjuku" placeholder="https://...">
+            </div>
+            <button class="btn btn-success" onclick="printQR()">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="3" height="3" rx=".5"/><rect x="18" y="14" width="3" height="3" rx=".5"/><rect x="14" y="18" width="3" height="3" rx=".5"/><rect x="18" y="18" width="3" height="3" rx=".5"/></svg>
+              QRコードを印刷
+            </button>
+          </div>
+
+          <!-- グループ割当 -->
+          <div>
+            <div style="font-size:0.83rem;font-weight:700;color:var(--color-gray-800);margin-bottom:4px">グループ割当（商品カテゴリ別）</div>
+            <p class="info-hint">「メイン料理」カテゴリなど、カテゴリごとにどのプリンターへ印刷するかを設定します。</p>
+            <div class="group-assign-grid" style="margin-bottom:14px">
+              <div>
+                <label>「メイン料理」カテゴリの印刷先</label>
+                <select class="form-control">
+                  <option selected>食事プリンター</option>
+                  <option>ドリンクプリンター</option>
+                  <option>ホールプリンター</option>
+                </select>
+              </div>
+              <div>
+                <label>「アルコール」カテゴリの印刷先</label>
+                <select class="form-control">
+                  <option>食事プリンター</option>
+                  <option selected>ドリンクプリンター</option>
+                  <option>ホールプリンター</option>
+                </select>
+              </div>
+              <div>
+                <label>「デザート」カテゴリの印刷先</label>
+                <select class="form-control">
+                  <option selected>食事プリンター</option>
+                  <option>ドリンクプリンター</option>
+                  <option>ホールプリンター</option>
+                </select>
+              </div>
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+              <input type="checkbox" style="accent-color:var(--color-primary)" checked>
+              テスト印刷実行
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           KDS設定
+      ══════════════════════════════════════ -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">📺</span>
+          <span class="section-card-title">KDS設定（Kitchen Display System）</span>
+        </div>
+        <div class="section-card-body">
+
+          <div class="kds-grid">
+
+            <!-- KDS Food -->
+            <div class="kds-card">
+              <div class="kds-card-title">🍽️ KDS Food（厨房）設定</div>
+              <div class="kds-field">
+                <label>伝票表示レイアウト</label>
+                <select class="form-control">
+                  <option selected>3列表示（標準）</option>
+                  <option>2列表示</option>
+                  <option>1列表示（大きく）</option>
+                </select>
+              </div>
+              <div class="kds-field">
+                <label>調理完了後 自動非表示（秒）</label>
+                <input type="number" class="form-control" value="60" min="10" max="300">
+              </div>
+            </div>
+
+            <!-- KDS Drink -->
+            <div class="kds-card">
+              <div class="kds-card-title">🍹 KDS Drink（バー）設定</div>
+              <div class="kds-field">
+                <label>伝票表示レイアウト</label>
+                <select class="form-control">
+                  <option selected>ドリンク特化（商品名・品数別）</option>
+                  <option>3列表示（標準）</option>
+                  <option>2列表示</option>
+                </select>
+              </div>
+              <div class="kds-field">
+                <label>アラート処理</label>
+                <select class="form-control">
+                  <option selected>ON</option>
+                  <option>OFF</option>
+                </select>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- デバイス登録 -->
+          <div>
+            <div style="font-size:0.83rem;font-weight:700;color:var(--color-gray-800);margin-bottom:4px">デバイス登録（各エリア）</div>
+            <p class="info-hint">各 KDS 端末に割り当てる Device ID を入力します。Device ID は端末の KDSアプリ画面から確認できます。</p>
+            <div class="device-id-grid">
+              <div class="device-id-item">
+                <div class="device-id-label">表エリア KDSデバイスID</div>
+                <input type="text" class="form-control" value="KDS-FOOD-01" placeholder="例：KDS-FOOD-01" style="font-family:monospace">
+              </div>
+              <div class="device-id-item">
+                <div class="device-id-label">バーエリア KDSデバイスID</div>
+                <input type="text" class="form-control" value="KDS-DRINK-01" placeholder="例：KDS-DRINK-01" style="font-family:monospace">
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           Display設定
+      ══════════════════════════════════════ -->
+      <div class="section-card">
+        <div class="section-card-header">
+          <span style="font-size:18px">📋</span>
+          <span class="section-card-title">Display設定（顧客呼び出し掲示板）</span>
+        </div>
+        <div class="section-card-body">
+          <div class="display-row">
+
+            <div class="display-col" style="display:flex;align-items:flex-start;gap:14px">
+              <div style="flex:1">
+                <div style="font-size:0.85rem;font-weight:600;color:var(--color-gray-800);margin-bottom:4px">Display 機能 有効化</div>
+                <div style="font-size:0.77rem;color:var(--color-gray-500)">顧客呼び出し用の大型表示板を接続します。</div>
+              </div>
+              <label class="toggle" style="flex-shrink:0;margin-top:2px">
+                <input type="checkbox" checked>
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+
+            <div class="display-col">
+              <label class="sub">デザインテーマ表示</label>
+              <select class="form-control">
+                <option selected>ライト（白背景）</option>
+                <option>ダーク（黒背景）</option>
+                <option>カスタム</option>
+              </select>
+            </div>
+
+            <div class="display-col">
+              <label class="sub">表示するステータス</label>
+              <select class="form-control">
+                <option selected>呼出番号 / 待機人数 / 着席中</option>
+                <option>呼出番号のみ</option>
+                <option>番号 + 待ち時間目安</option>
+              </select>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px">
+        <a href="A1_011.html" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          前のステップ: AI・自動化設定
+        </a>
+        <a href="index.html" class="btn btn-primary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          設定完了 — ダッシュボードへ
+        </a>
+      </div>
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: 食事プリンター（厨房・ホール用）テンプレート編集
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-kitchen">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title">🍽️ 注文伝票テンプレート編集（厨房・ホール用）</span>
+      <button class="modal-close" onclick="closeModal('modal-kitchen')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="tpl-modal-grid">
+        <div>
+          <div class="form-label" style="margin-bottom:6px">テンプレート内容 (Plain Text)</div>
+          <textarea class="form-control" rows="16" id="tpl-kitchen" style="font-family:monospace;font-size:0.78rem">*** KITCHEN ORDER - FOOD ***
+------------------------------
+テーブル: {テーブル} / {人数}名
+担当: {スタッフ}
+注文時間: {時間}
+目標完了時間: {目標時間}
+------------------------------
+
+{商品名} x {数量}
+  {カスタム}
+
+{商品名} x {数量}
+  {カスタム}
+
+==============================
+(Thank you message)</textarea>
+          <div class="var-chips" id="vars-kitchen">
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{テーブル}')">{"テーブル"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{人数}')">{"人数"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{時間}')">{"時間"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{スタッフ}')">{"スタッフ"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{商品名}')">{"商品名"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{数量}')">{"数量"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{カスタム}')">{"カスタム"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-kitchen', '{目標時間}')">{"目標時間"}</span>
+          </div>
+        </div>
+        <div>
+          <div class="tpl-preview">
+            <div class="tpl-preview-title">印刷プレビュー（食事伝票）</div>
+            <div class="receipt-preview">
+              <div class="r-title">--- 厨房指示書 ---</div>
+              <div class="r-meta">テーブル：T12 / 4名<br>注文時間：19:45:12<br>担当：佐藤<br>目標完了時間：20:05</div>
+              <div class="r-sep"></div>
+              <div class="r-title" style="font-size:0.72rem;border:none;padding:0;margin-bottom:6px">--- オーダー ---</div>
+              <div class="r-item"><span>特製ラーメン</span><span>x 2</span></div>
+              <div class="r-custom">ネギ抜き、麺固め</div>
+              <div class="r-item" style="margin-top:4px"><span>和牛ステーキ</span><span>x 1</span></div>
+              <div class="r-custom">ミディアムレア</div>
+              <div class="r-sep"></div>
+              <div class="r-total">合計 3品</div>
+              <div class="r-target">調理完了目標：20:05</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-kitchen')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveTpl('modal-kitchen')">テンプレートを保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: ドリンクプリンター（バー・ドリンク専用）
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-drink">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title">🍺 ドリンク伝票テンプレート編集（バー・ドリンク専用）</span>
+      <button class="modal-close" onclick="closeModal('modal-drink')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="tpl-modal-grid">
+        <div>
+          <div class="form-label" style="margin-bottom:6px">テンプレート内容 (Plain Text)</div>
+          <textarea class="form-control" rows="16" id="tpl-drink" style="font-family:monospace;font-size:0.78rem">*** BAR ORDER - DRINK ***
+------------------------------
+テーブル: {テーブル} / {人数}名
+担当: {スタッフ}
+注文時間: {時間}
+------------------------------
+
+{商品名} x {数量}
+  {カスタム}
+
+{商品名} x {数量}
+  {カスタム}
+
+==============================
+(Please prepare quickly!)</textarea>
+          <div class="var-chips">
+            <span class="var-chip" onclick="insertVar('tpl-drink', '{テーブル}')">{"テーブル"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-drink', '{人数}')">{"人数"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-drink', '{時間}')">{"時間"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-drink', '{スタッフ}')">{"スタッフ"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-drink', '{商品名}')">{"商品名"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-drink', '{数量}')">{"数量"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-drink', '{カスタム}')">{"カスタム"}</span>
+          </div>
+        </div>
+        <div>
+          <div class="tpl-preview">
+            <div class="tpl-preview-title">印刷プレビュー（バードリンク伝票）</div>
+            <div class="receipt-preview">
+              <div class="r-title">--- BAR ORDER ---</div>
+              <div class="r-meta">テーブル：B-1<br>注文時間：19:48:05</div>
+              <div class="r-sep"></div>
+              <div class="r-title" style="font-size:0.72rem;border:none;padding:0;margin-bottom:6px">--- ドリンク ---</div>
+              <div class="r-item"><span>生ビール</span><span>x 2</span></div>
+              <div class="r-custom">氷少なめ</div>
+              <div class="r-item" style="margin-top:4px"><span>ウーロン茶</span><span>x 1</span></div>
+              <div class="r-sep"></div>
+              <div class="r-total">合計 3品</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-drink')">キャンセル</button>
+      <button class="btn btn-success" onclick="saveTpl('modal-drink')">テンプレートを保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: ホールプリンター（注文伝票 調理指示）
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-hall">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title">🍱 厨房伝票テンプレート編集（調理指示）</span>
+      <button class="modal-close" onclick="closeModal('modal-hall')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="tpl-modal-grid">
+        <div>
+          <div class="form-label" style="margin-bottom:6px">テンプレート内容 (Plain Text)</div>
+          <textarea class="form-control" rows="16" id="tpl-hall" style="font-family:monospace;font-size:0.78rem">*** KITCHEN ORDER - FOOD ***
+------------------------------
+テーブル: {テーブル} / {人数}名
+担当: {スタッフ}
+注文時間: {時間}
+------------------------------
+
+{商品名} x {数量}
+  {カスタム}
+
+{商品名} x {数量}
+  {カスタム}
+
+==============================
+調理完了目標時間: {目標時間}</textarea>
+          <div class="var-chips">
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{テーブル}')">{"テーブル"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{人数}')">{"人数"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{時間}')">{"時間"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{スタッフ}')">{"スタッフ"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{商品名}')">{"商品名"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{数量}')">{"数量"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{カスタム}')">{"カスタム"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-hall', '{目標時間}')">{"目標時間"}</span>
+          </div>
+        </div>
+        <div>
+          <div class="tpl-preview">
+            <div class="tpl-preview-title">印刷プレビュー（食事伝票）</div>
+            <div class="receipt-preview">
+              <div class="r-title">--- 厨房指示書 ---</div>
+              <div class="r-meta">テーブル：T12 / 4名<br>注文時間：19:45:12<br>目標完了時間：20:05</div>
+              <div class="r-sep"></div>
+              <div class="r-title" style="font-size:0.72rem;border:none;padding:0;margin-bottom:6px">--- オーダー ---</div>
+              <div class="r-item"><span>特製ラーメン</span><span>x 2</span></div>
+              <div class="r-custom">ネギ抜き、麺固め</div>
+              <div class="r-item" style="margin-top:4px"><span>和牛ステーキ</span><span>x 1</span></div>
+              <div class="r-custom">ミディアムレア</div>
+              <div class="r-sep"></div>
+              <div class="r-total">合計 3品</div>
+              <div class="r-target">調理完了目標：20:05</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-hall')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveTpl('modal-hall')">テンプレートを保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL: 発券機 順番待ち伝票レイアウト編集
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-ticket">
+  <div class="modal modal-xl">
+    <div class="modal-header">
+      <span class="modal-title">🎫 順番待ち伝票レイアウト編集</span>
+      <button class="modal-close" onclick="closeModal('modal-ticket')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="tpl-modal-grid">
+        <div>
+          <div class="form-label" style="margin-bottom:6px">テンプレート内容 (Plain Text)</div>
+          <textarea class="form-control" rows="16" id="tpl-ticket" style="font-family:monospace;font-size:0.78rem">--- さくらレストラン ---
+発券日時: {日付} {時間}
+---------------------
+
+お待ちの番号:
+# {番号}
+
+---------------------
+人数: {人数}名
+[LINE連携で呼出通知]
+---------------------
+只今の待ち時間目安: {待ち時間}</textarea>
+          <div class="var-chips">
+            <span class="var-chip" onclick="insertVar('tpl-ticket', '{番号}')">{"番号"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-ticket', '{人数}')">{"人数"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-ticket', '{日付}')">{"日付"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-ticket', '{時間}')">{"時間"}</span>
+            <span class="var-chip" onclick="insertVar('tpl-ticket', '{待ち時間}')">{"待ち時間"}</span>
+          </div>
+        </div>
+        <div>
+          <div class="tpl-preview">
+            <div class="tpl-preview-title">印刷プレビュー</div>
+            <div class="receipt-preview">
+              <div class="r-title">さくらレストラン</div>
+              <div class="r-meta" style="text-align:center">発券日時：2025/11/05 13:05</div>
+              <div class="r-sep" style="border-top-style:dashed"></div>
+              <div style="text-align:center;font-size:0.72rem;margin-bottom:4px">お待ちの番号：</div>
+              <div class="r-num-big"># A007</div>
+              <div class="r-sep" style="border-top-style:dashed"></div>
+              <div style="text-align:center;font-size:0.72rem;line-height:1.9">
+                人数：4名様<br>
+                待ち時間目安：15分<br>
+                [LINE連携QRコード]
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-ticket')">キャンセル</button>
+      <button class="btn btn-primary" onclick="saveTpl('modal-ticket')">レイアウトを保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">設定を保存しました</span>
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'device' });
+
+  /* ── Modal open / close ── */
+  function openModal(id) {
+    document.getElementById(id).classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) closeModal(overlay.id);
+    });
+  });
+
+  /* ── Insert variable chip into textarea ── */
+  function insertVar(textareaId, variable) {
+    const ta = document.getElementById(textareaId);
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end   = ta.selectionEnd;
+    ta.value = ta.value.slice(0, start) + variable + ta.value.slice(end);
+    ta.selectionStart = ta.selectionEnd = start + variable.length;
+    ta.focus();
+  }
+
+  /* ── Save template toast ── */
+  function saveTpl(modalId) {
+    closeModal(modalId);
+    showToast('テンプレートを保存しました');
+  }
+
+  /* ── Check connections ── */
+  function checkConnections() {
+    showToast('接続確認中... すべてのデバイスが接続されています');
+  }
+
+  /* ── Print QR ── */
+  function printQR() {
+    showToast('QRコードを印刷しています...');
+  }
+
+  /* ── Save toast ── */
+  function handleSave() {
+    showToast('設定を保存しました');
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg || '設定を保存しました';
+    toast.style.display = 'flex';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+</script>
+</body>
+</html>

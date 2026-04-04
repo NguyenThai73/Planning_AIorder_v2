@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>機能別詳細設定 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Shared section card ── */
+    .section-card {
+      background: var(--color-white);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-xl);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .section-card-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--color-gray-100);
+      background: var(--color-gray-50);
+    }
+    .section-card-title { font-size: 0.9rem; font-weight: 700; color: var(--color-gray-900); }
+    .section-card-body { padding: 20px; }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex; gap: 2px;
+      border-bottom: 2px solid var(--color-gray-200);
+      margin-bottom: 24px;
+      overflow-x: auto;
+      padding-bottom: 0;
+    }
+    .tab-btn {
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 14px;
+      font-size: 0.8rem; font-weight: 600;
+      color: var(--color-gray-500);
+      border: none; background: none; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      white-space: nowrap;
+      transition: color var(--transition);
+    }
+    .tab-btn:hover { color: var(--color-gray-800); }
+    .tab-btn.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* ── Toggle row ── */
+    .toggle-row {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--color-gray-100);
+    }
+    .toggle-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .toggle-row:first-child { padding-top: 0; }
+    .tr-label { font-size: 0.88rem; font-weight: 600; color: var(--color-gray-800); margin-bottom: 3px; }
+    .tr-desc  { font-size: 0.78rem; color: var(--color-gray-500); line-height: 1.5; }
+
+    /* ── Sub box (indented setting) ── */
+    .sub-box {
+      margin-top: 12px;
+      background: var(--color-gray-50);
+      border: 1px solid var(--color-gray-200);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+    }
+
+    /* ── Info box ── */
+    .info-box {
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      margin-top: 10px;
+    }
+    .info-box.blue   { background: #eff6ff; border-left: 3px solid #3b82f6; color: #1e40af; }
+    .info-box.yellow { background: #fffbeb; border-left: 3px solid #f59e0b; color: #92400e; }
+    .info-box.green  { background: #ecfdf5; border-left: 3px solid #10b981; color: #065f46; }
+    .info-box.red    { background: #fef2f2; border-left: 3px solid #ef4444; color: #991b1b; }
+    .info-box ul { padding-left: 16px; list-style: disc; margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+    .info-box strong { font-weight: 700; }
+
+    /* ── Mode button group ── */
+    .mode-group { display: flex; gap: 0; border: 1px solid var(--color-gray-300); border-radius: var(--radius-md); overflow: hidden; display: inline-flex; }
+    .mode-btn { padding: 6px 18px; font-size: 0.8rem; font-weight: 600; background: var(--color-white); border: none; cursor: pointer; color: var(--color-gray-600); transition: background var(--transition), color var(--transition); }
+    .mode-btn.active { background: var(--color-primary); color: #fff; }
+    .mode-btn + .mode-btn { border-left: 1px solid var(--color-gray-300); }
+
+    /* ── Sticky bar ── */
+    .sticky-bar {
+      position: sticky; top: var(--header-height); z-index: 30;
+      background: var(--color-white); border-bottom: 1px solid var(--color-gray-200);
+      padding: 12px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .sticky-bar-left { display: flex; align-items: center; gap: 12px; }
+    .sticky-bar-right { display: flex; align-items: center; gap: 8px; }
+    .step-indicator { display: flex; gap: 6px; align-items: center; }
+    .step-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-gray-200); }
+    .step-dot.active { background: var(--color-primary); width: 20px; border-radius: 4px; }
+    .step-dot.done { background: var(--color-success); }
+
+    /* ── Day-time table ── */
+    .time-slot-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .time-slot-table th { padding: 8px 10px; text-align: left; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--color-gray-500); border-bottom: 1px solid var(--color-gray-200); }
+    .time-slot-table td { padding: 8px 10px; border-bottom: 1px solid var(--color-gray-100); vertical-align: middle; }
+    .time-slot-table tbody tr:last-child td { border-bottom: none; }
+
+    .day-check { display: flex; gap: 6px; flex-wrap: wrap; }
+    .day-check label { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; cursor: pointer; }
+
+    /* ── Shift template textarea ── */
+    .tmpl-textarea { width: 100%; min-height: 72px; resize: vertical; font-size: 0.78rem; }
+
+    /* ── Call button table ── */
+    .call-icon-cell { font-size: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <!-- Sticky bar -->
+    <div class="sticky-bar">
+      <div class="sticky-bar-left">
+        <nav class="breadcrumb" style="margin:0">
+          <a href="index.html">ホーム</a>
+          <span class="breadcrumb-sep">›</span>
+          <span>店舗設定</span>
+          <span class="breadcrumb-sep">›</span>
+          <span>機能別詳細設定</span>
+        </nav>
+        <div class="step-indicator">
+          <div class="step-dot done"></div>
+          <div class="step-dot done"></div>
+          <div class="step-dot active"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+          <div class="step-dot"></div>
+        </div>
+        <span style="font-size:0.72rem;color:var(--color-gray-500)">Step 3 / 6</span>
+      </div>
+      <div class="sticky-bar-right">
+        <button class="btn btn-secondary">キャンセル</button>
+        <button class="btn btn-primary" onclick="handleSave()">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          設定を保存
+        </button>
+        <a href="A1_010.html" class="btn btn-outline">
+          次のステップ
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <div class="page-content">
+      <div style="margin-bottom:20px;">
+        <h1 class="page-title">⚙️ 機能別詳細設定</h1>
+        <p class="page-subtitle">店舗の各機能を有効化して詳細設定を行います。不要な機能はOFFのままで構いません。</p>
+      </div>
+
+      <!-- Tab bar -->
+      <div class="tab-bar" id="tabBar">
+        <button class="tab-btn" data-tab="booking"   onclick="switchTab('booking')">  📖 予約設定</button>
+        <button class="tab-btn" data-tab="waitlist"  onclick="switchTab('waitlist')"> 🎫 待ち順番・受付設定</button>
+        <button class="tab-btn" data-tab="order"     onclick="switchTab('order')">    🍽️ 注文・受付設定</button>
+        <button class="tab-btn" data-tab="payment"   onclick="switchTab('payment')">  💳 会計設定</button>
+        <button class="tab-btn" data-tab="takeout"   onclick="switchTab('takeout')">  🥡 テイクアウト設定</button>
+        <button class="tab-btn" data-tab="shift"     onclick="switchTab('shift')">    📅 シフト設定</button>
+        <button class="tab-btn" data-tab="operation" onclick="switchTab('operation')">🏪 店舗運用設定</button>
+      </div>
+
+      <!-- ════════════════════════════════════════
+           TAB 1 — 予約設定  (A1_003)
+      ════════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-booking">
+
+        <div class="section-card">
+          <div class="section-card-header"><span>📖</span><span class="section-card-title">予約設定</span></div>
+          <div class="section-card-body">
+
+            <!-- オンライン予約受付 -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">オンライン予約受付</div>
+                <div class="tr-desc">オンライン予約を受け付けます。</div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:8px">
+                  <label class="toggle"><input type="checkbox" checked id="chk-booking"><span class="toggle-track"></span></label>
+                  <span id="booking-status" style="font-size:0.78rem;font-weight:600;color:var(--color-success)">● 受付中</span>
+                </div>
+                <div class="form-hint">OFFにするとLINEやWebからの予約を一時停止します。</div>
+              </div>
+            </div>
+
+            <!-- 予約確定モード -->
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div class="tr-label">予約確定モード</div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <label class="form-label" style="margin:0;white-space:nowrap">予約の確定方法：</label>
+                <select class="form-control" style="width:240px">
+                  <option selected>店舗確認後に確定</option>
+                  <option>自動確定</option>
+                </select>
+              </div>
+              <div class="form-hint">「店舗確認後に確定」を選択した場合、予約一覧に「確認待ち」ステータスが追加されます。</div>
+            </div>
+
+            <!-- 決済オプション -->
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div class="tr-label">決済オプション</div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <label class="form-label" style="margin:0;white-space:nowrap">予約時の決済方法：</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="pay-mode" style="accent-color:var(--color-primary)"> オンライン決済
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+                  <input type="radio" name="pay-mode" checked style="accent-color:var(--color-primary)"> 店舗決済
+                </label>
+              </div>
+              <div class="form-hint">顧客が予約時に選択できる支払い方法を管理します。</div>
+            </div>
+
+            <!-- キャンセルポリシー -->
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div class="tr-label">キャンセルポリシー設定</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <label class="form-label" style="margin:0">予約の</label>
+                <input type="number" class="form-control" value="24" style="width:80px">
+                <select class="form-control" style="width:200px">
+                  <option selected>時間前までキャンセル可能</option>
+                  <option>日前までキャンセル可能</option>
+                  <option>キャンセル不可</option>
+                </select>
+              </div>
+              <div class="info-box yellow">⚠️ オンライン決済済みの場合はキャンセル不可となります。</div>
+            </div>
+
+            <!-- スケジュール表示時間帯 -->
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div class="tr-label">スケジュール表示時間帯</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <label class="form-label" style="margin:0">表示開始時間：</label>
+                <input type="time" class="form-control" value="09:00" style="width:120px">
+                <span style="color:var(--color-gray-400)">〜</span>
+                <input type="time" class="form-control" value="23:00" style="width:120px">
+              </div>
+              <div class="form-hint">この時間帯が予約スケジュール画面に表示されます。</div>
+            </div>
+
+            <!-- 滞在時間 -->
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div class="tr-label">滞在時間（利用時間）</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <label class="form-label" style="margin:0">1組あたりの利用時間：</label>
+                <input type="number" class="form-control" value="60" style="width:80px">
+                <span class="form-label" style="margin:0">分</span>
+              </div>
+              <div class="form-hint">利用時間が終了する際に一括精算が表示され、次のタイムスロットを作成します。</div>
+            </div>
+
+            <!-- 準備・清掃時間 -->
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div class="tr-label">準備・清掃時間</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <label class="form-label" style="margin:0">各予約間の清掃時間：</label>
+                <input type="number" class="form-control" value="15" style="width:80px">
+                <span class="form-label" style="margin:0">分</span>
+              </div>
+              <div class="form-hint">清掃時間は予約を受け付けません。</div>
+            </div>
+
+            <!-- リマインド通知 -->
+            <div class="toggle-row" style="flex-direction:column;align-items:flex-start;gap:8px">
+              <div class="tr-label">リマインド通知</div>
+              <div style="display:flex;align-items:center;gap:12px;width:100%">
+                <label class="form-label" style="margin:0;white-space:nowrap">送信タイミング：</label>
+                <select class="form-control" style="width:200px">
+                  <option selected>来店1時間前</option>
+                  <option>来店2時間前</option>
+                  <option>来店前日18:00</option>
+                </select>
+              </div>
+              <div style="width:100%">
+                <label class="form-label">通知メッセージ内容</label>
+                <textarea class="form-control" rows="2">例：ご予約ありがとうございます。本日時間にご来店をお待ちしております。</textarea>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 予約可能時間帯設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🕐</span><span class="section-card-title">予約可能時間帯設定</span></div>
+          <div class="section-card-body">
+            <div class="form-hint" style="margin-bottom:14px">曜日ごとに適用できる時間枠を設定できます（祝日は不要です）。</div>
+            <table class="time-slot-table">
+              <thead><tr><th>#</th><th>開始</th><th>終了</th><th>対象曜日</th><th>状態</th><th>削除</th></tr></thead>
+              <tbody id="booking-slots">
+                <tr>
+                  <td>1</td>
+                  <td><input type="time" class="form-control" value="11:00" style="width:110px"></td>
+                  <td><input type="time" class="form-control" value="14:00" style="width:110px"></td>
+                  <td>
+                    <div class="day-check">
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">月</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">火</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">水</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">木</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">金</label>
+                      <label><input type="checkbox" style="accent-color:var(--color-primary)">土</label>
+                      <label><input type="checkbox" style="accent-color:var(--color-primary)">日</label>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-green">有効</span></td>
+                  <td><button class="btn btn-sm btn-danger" onclick="removeSlotRow(this)">削除</button></td>
+                </tr>
+                <tr>
+                  <td>2</td>
+                  <td><input type="time" class="form-control" value="17:00" style="width:110px"></td>
+                  <td><input type="time" class="form-control" value="22:00" style="width:110px"></td>
+                  <td>
+                    <div class="day-check">
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">月</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">火</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">水</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">木</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">金</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">土</label>
+                      <label><input type="checkbox" checked style="accent-color:var(--color-primary)">日</label>
+                    </div>
+                  </td>
+                  <td><span class="badge badge-green">有効</span></td>
+                  <td><button class="btn btn-sm btn-danger" onclick="removeSlotRow(this)">削除</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="addBookingSlot()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              時間枠を追加
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /pane-booking -->
+
+
+      <!-- ════════════════════════════════════════
+           TAB 2 — 待ち順番・受付設定  (A1_004)
+      ════════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-waitlist">
+
+        <!-- 受付モード設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🎫</span><span class="section-card-title">受付モード設定</span></div>
+          <div class="section-card-body" style="display:flex;flex-direction:column;gap:16px">
+
+            <div>
+              <label class="form-label">受付状況</label>
+              <div class="mode-group">
+                <button class="mode-btn active" onclick="setMode(this,'Waitlist利用')">Waitlist利用</button>
+                <button class="mode-btn" onclick="setMode(this,'休止')">休止</button>
+              </div>
+            </div>
+
+            <div>
+              <label class="form-label">受付方法</label>
+              <select class="form-control" style="max-width:320px">
+                <option selected>オンライン受付（Web/Line）</option>
+                <option>店頭のみ</option>
+                <option>両方</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="form-label">受付曜日</label>
+              <div class="day-check" style="margin-bottom:12px">
+                <label><input type="checkbox" checked style="accent-color:var(--color-primary)">月</label>
+                <label><input type="checkbox" checked style="accent-color:var(--color-primary)">火</label>
+                <label><input type="checkbox" checked style="accent-color:var(--color-primary)">水</label>
+                <label><input type="checkbox" checked style="accent-color:var(--color-primary)">木</label>
+                <label><input type="checkbox" checked style="accent-color:var(--color-primary)">金</label>
+                <label><input type="checkbox" checked style="accent-color:var(--color-primary)">土</label>
+                <label><input type="checkbox" checked style="accent-color:var(--color-primary)">日</label>
+              </div>
+              <div class="grid grid-3" style="gap:14px">
+                <div>
+                  <label class="form-label" style="font-size:0.75rem">平日（月–金）</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="time" class="form-control" value="10:00">
+                    <span style="color:var(--color-gray-400)">–</span>
+                    <input type="time" class="form-control" value="21:00">
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:0.75rem">土曜日</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="time" class="form-control" value="09:00">
+                    <span style="color:var(--color-gray-400)">–</span>
+                    <input type="time" class="form-control" value="22:00">
+                  </div>
+                </div>
+                <div>
+                  <label class="form-label" style="font-size:0.75rem">日曜日</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="time" class="form-control" value="09:00">
+                    <span style="color:var(--color-gray-400)">–</span>
+                    <input type="time" class="form-control" value="22:00">
+                  </div>
+                </div>
+              </div>
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.8rem;cursor:pointer;margin-top:10px">
+                <input type="checkbox" style="accent-color:var(--color-primary)"> 祝日も受付を行う
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- リマインダー通知設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🔔</span><span class="section-card-title">お客様リマインダー通知設定</span></div>
+          <div class="section-card-body">
+            <div class="grid grid-2" style="gap:16px;margin-bottom:16px">
+              <div>
+                <label class="form-label">最初のリマインドの基準</label>
+                <select class="form-control">
+                  <option selected>残りn組になった時点（推奨）</option>
+                  <option>呼び出しX分前</option>
+                </select>
+              </div>
+              <div style="display:flex;gap:16px">
+                <div style="flex:1">
+                  <label class="form-label">通知のしきい値</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" class="form-control" value="3" style="width:70px">
+                    <span class="form-hint" style="margin:0">組前</span>
+                  </div>
+                </div>
+                <div style="flex:1">
+                  <label class="form-label">最大リマインド回数</label>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <input type="number" class="form-control" value="2" style="width:70px">
+                    <span class="form-hint" style="margin:0">回</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="max-width:200px">
+              <label class="form-label">リマインドの間隔</label>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" class="form-control" value="5">
+                <span class="form-hint" style="margin:0">分</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 自動キャンセル設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>❌</span><span class="section-card-title">自動キャンセル設定</span></div>
+          <div class="section-card-body">
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer;margin-bottom:16px">
+              <input type="radio" name="cancel-rule" checked style="accent-color:var(--color-primary)">
+              呼び出し後に応答がない場合に自動でキャンセルする
+            </label>
+            <div class="grid grid-2" style="gap:16px">
+              <div>
+                <label class="form-label">キャンセル条件</label>
+                <select class="form-control">
+                  <option selected>呼び出し後、一定時間経過</option>
+                  <option>手動キャンセルのみ</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">キャンセルまでの時間</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <input type="number" class="form-control" value="10">
+                  <span class="form-hint" style="margin:0">分</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 発券機設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🖨️</span><span class="section-card-title">発券機設定（オフラインWaitlist対応）</span></div>
+          <div class="section-card-body">
+            <div class="grid grid-3" style="gap:16px;margin-bottom:12px">
+              <div>
+                <label class="form-label">発券機の利用有無</label>
+                <select class="form-control">
+                  <option selected>あり（番号札を発行）</option>
+                  <option>なし</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">接続タイプ</label>
+                <select class="form-control">
+                  <option selected>USBプリンター</option>
+                  <option>ネットワークプリンター</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">発券番号のフォーマット</label>
+                <select class="form-control">
+                  <option selected>A001〜形式</option>
+                  <option>001〜形式</option>
+                  <option>W001〜形式</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+              テスト印刷
+            </button>
+            <div class="form-hint" style="margin-top:6px">※ 印刷が完了した場合、店舗未画面で確認できます。またLINE連携で入力した際に同じ内容で伝えることになります。</div>
+          </div>
+        </div>
+
+      </div><!-- /pane-waitlist -->
+
+
+      <!-- ════════════════════════════════════════
+           TAB 3 — 注文・受付設定  (A1_005)
+      ════════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-order">
+
+        <div class="section-card">
+          <div class="section-card-header"><span>🍽️</span><span class="section-card-title">注文・受付設定</span></div>
+          <div class="section-card-body">
+
+            <!-- 注文伝票 -->
+            <div class="toggle-row">
+              <div style="flex:1">
+                <div class="tr-label">注文伝票</div>
+                <div class="tr-desc">注文伝票の印刷タイミングを設定します。</div>
+                <div class="sub-box" id="order-slip-sub" style="display:none">
+                  <label class="form-label" style="font-size:0.78rem">印刷タイミング</label>
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <label style="display:flex;align-items:flex-start;gap:8px;font-size:0.8rem;cursor:pointer">
+                      <input type="radio" name="slip-timing" checked style="accent-color:var(--color-primary);margin-top:2px">
+                      <span><strong>初回注文の受け込み自動印刷</strong> — テーブルの最初の注文の時に自動印刷されます。</span>
+                    </label>
+                    <label style="display:flex;align-items:flex-start;gap:8px;font-size:0.8rem;cursor:pointer">
+                      <input type="radio" name="slip-timing" style="accent-color:var(--color-primary);margin-top:2px">
+                      <span><strong>最終決済の場合</strong> — すべての注文受取の後に自動的に印刷されます。</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <label class="toggle"><input type="checkbox" onchange="toggleSubBox(this,'order-slip-sub')"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- キッチン伝票 -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">キッチン伝票</div>
+                <div class="tr-desc">キッチン向けの伝票を自動印刷有効にします。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- アレルギーアイコン -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">アレルギーアイコン表示</div>
+                <div class="tr-desc">メニューにアレルギーアイコンを表示します。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- ドリンク・フード分類 -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">ドリンク・フード分類</div>
+                <div class="tr-desc">ドリンクとフードを分類表示有効にします。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- Hands Free モード -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">Hands Free モード</div>
+                <div class="tr-desc">キッチンディスプレイで注文を自動表示し、タッチ不要で次の注文へ移動。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- KDS 調理時間アラート -->
+            <div class="toggle-row">
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="tr-label">KDS調理時間アラート</div>
+                  <span class="badge badge-cyan" style="font-size:0.65rem">NEW</span>
+                </div>
+                <div class="tr-desc">調理時間が設定を超えた注文に、KDSに警告を表示して遅延を防ぎます。</div>
+                <div class="sub-box" id="kds-sub">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                    <label class="form-label" style="margin:0;white-space:nowrap">アラートまでの時間：</label>
+                    <input type="number" class="form-control" value="30" style="width:80px">
+                    <span class="form-label" style="margin:0">分</span>
+                  </div>
+                  <div class="info-box blue">
+                    <strong>🔵 自動警報</strong>
+                    <ul>
+                      <li>調理時間が設定時間を超過すると、KDSシステムで自動警報を行います</li>
+                      <li>当該注文が表示される</li>
+                      <li>音声アラート「調理時間が超過しています」が発生</li>
+                      <li>スタッフの注意を促し、遅延を軽減</li>
+                    </ul>
+                  </div>
+                  <div class="info-box yellow" style="margin-top:8px">
+                    <strong>KDS画面の表示例</strong><br>
+                    特製ラーメン２　調理時間：18:50｜経過時間：35分（遅延 +5分）
+                  </div>
+                </div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked onchange="toggleSubBox(this,'kds-sub')"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- 混雑フラグ -->
+            <div class="toggle-row" style="border-bottom:none;padding-bottom:0">
+              <div style="flex:1">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="tr-label">混雑フラグ</div>
+                  <span class="badge badge-cyan" style="font-size:0.65rem">NEW</span>
+                </div>
+                <div class="tr-desc">来店注文の件数が閾値を超えた後、混雑フラグを自動的にセットします。</div>
+                <div class="sub-box" id="busy-sub">
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+                    <label class="form-label" style="margin:0;white-space:nowrap">混雑判定の基準時間：</label>
+                    <input type="number" class="form-control" value="2" style="width:80px">
+                    <span class="form-label" style="margin:0">時間</span>
+                  </div>
+                  <div class="info-box blue">
+                    <strong>💡 計算方法</strong>
+                    <ul>
+                      <li>設定時間以上に来店注文件数が設定を超えると、混雑フラグを自動にセットします</li>
+                      <li>来店注文より多い（本日1〜17時）経過した後、混雑予定フラグON</li>
+                      <li>この条件時間外の場合には「混雑時間外」と記述します</li>
+                    </ul>
+                  </div>
+                  <div class="info-box green" style="margin-top:8px">
+                    <strong>🟢 自動制御</strong>
+                    <ul>
+                      <li>混雑フラグがONになるとともに予約の受け付け一時停止（オプション）</li>
+                      <li>ホールスタッフアプリに混雑通知を送信</li>
+                      <li>混雑時AIおすすめエンジンに連携</li>
+                      <li>マネージャーにアラートメール送信（オプション）</li>
+                    </ul>
+                  </div>
+                  <div class="info-box yellow" style="margin-top:8px">
+                    <strong>⚠️ 混雑時の例</strong><br>
+                    来店注文：12件｜日、経過時間：2時間15分（+0:0）<br>
+                    推定待ち時間：45〜60分
+                  </div>
+                </div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked onchange="toggleSubBox(this,'busy-sub')"><span class="toggle-track"></span></label>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /pane-order -->
+
+
+      <!-- ════════════════════════════════════════
+           TAB 4 — 会計設定  (A1_006)
+      ════════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-payment">
+
+        <div class="section-card">
+          <div class="section-card-header"><span>💳</span><span class="section-card-title">会計設定</span></div>
+          <div class="section-card-body">
+
+            <!-- POS会計 -->
+            <div class="toggle-row">
+              <div style="flex:1">
+                <div class="tr-label">POS会計</div>
+                <div class="tr-desc">POSレジシステムとの連携を有効化します。</div>
+                <div class="sub-box" id="pos-sub">
+                  <label class="form-label" style="font-size:0.78rem">お客様の画面に表示する案内メッセージ</label>
+                  <textarea class="form-control" rows="3" placeholder="例：お会計の準備ができましたら、こちらの画面をレジまでお持ちください。"></textarea>
+                </div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked onchange="toggleSubBox(this,'pos-sub')"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- テーブル会計 -->
+            <div class="toggle-row">
+              <div style="flex:1">
+                <div class="tr-label">テーブル会計</div>
+                <div class="tr-desc">テーブルごとの会計機能を有効にします。</div>
+                <div class="sub-box" id="table-pay-sub">
+                  <label class="form-label" style="font-size:0.78rem">お客様の画面に表示する案内メッセージ</label>
+                  <textarea class="form-control" rows="3" placeholder="例：お会計の準備ができましたら、こちらの画面をレジまでお持ちください。"></textarea>
+                </div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked onchange="toggleSubBox(this,'table-pay-sub')"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- Square -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">Square決済連携</div>
+                <div class="tr-desc">Square決済システムと連携してクレジットカード決済を受け付けます。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- PayPay -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">PayPay決済連携</div>
+                <div class="tr-desc">PayPay決済を受け付けます。QRコードスキャンで即座に決済完了。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- 静的QR -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">静的QR決済</div>
+                <div class="tr-desc">PayPay Static QR（固定QRコード）での決済を有効にします。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- 領収書印刷 -->
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">領収書印刷</div>
+                <div class="tr-desc">会計後に領収書を自動印刷します。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+            <!-- クレジットカード決済 -->
+            <div class="toggle-row" style="border-bottom:none;padding-bottom:0">
+              <div>
+                <div class="tr-label">クレジットカード決済</div>
+                <div class="tr-desc">クレジットカードでの支払いを受け付けます。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- /pane-payment -->
+
+
+      <!-- ════════════════════════════════════════
+           TAB 5 — テイクアウト設定  (A1_007)
+      ════════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-takeout">
+
+        <!-- テイクアウト受付設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🥡</span><span class="section-card-title">テイクアウト受付設定</span></div>
+          <div class="section-card-body">
+            <div class="tr-desc" style="margin-bottom:12px">テイクアウト受付機能を有効・無効化します。</div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;cursor:pointer">
+              <input type="checkbox" checked style="accent-color:var(--color-primary);width:16px;height:16px">
+              テイクアウト受付を有効にする
+            </label>
+            <div class="form-hint">※ OFFの場合、LINEやWebからの注文受付できません。</div>
+          </div>
+        </div>
+
+        <!-- 受付時間設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🕐</span><span class="section-card-title">受付時間設定</span></div>
+          <div class="section-card-body">
+            <div class="tr-desc" style="margin-bottom:12px">テイクアウトの受付曜日と時間帯を設定します。</div>
+            <label class="form-label">曜日設定：</label>
+            <div class="day-check" style="margin-bottom:14px">
+              <label><input type="checkbox" checked style="accent-color:var(--color-primary)">月</label>
+              <label><input type="checkbox" checked style="accent-color:var(--color-primary)">火</label>
+              <label><input type="checkbox" checked style="accent-color:var(--color-primary)">水</label>
+              <label><input type="checkbox" checked style="accent-color:var(--color-primary)">木</label>
+              <label><input type="checkbox" checked style="accent-color:var(--color-primary)">金</label>
+              <label><input type="checkbox" style="accent-color:var(--color-primary)">土</label>
+              <label><input type="checkbox" style="accent-color:var(--color-primary)">日</label>
+            </div>
+            <label class="form-label">受付時間：</label>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <input type="time" class="form-control" value="10:00" style="width:130px">
+              <span style="color:var(--color-gray-400)">〜</span>
+              <input type="time" class="form-control" value="20:00" style="width:130px">
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+              <input type="checkbox" style="accent-color:var(--color-primary)"> 休日・祝日も受付する
+            </label>
+          </div>
+        </div>
+
+        <!-- 決済設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>💳</span><span class="section-card-title">決済設定</span></div>
+          <div class="section-card-body">
+            <div class="tr-desc" style="margin-bottom:12px">テイクアウト時の決済方法を設定します。</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+                <input type="checkbox" checked style="accent-color:var(--color-primary)"> PayPay決済
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+                <input type="checkbox" checked style="accent-color:var(--color-primary)"> Square（クレジット決済）
+              </label>
+              <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+                <input type="checkbox" style="accent-color:var(--color-primary)"> 店頭現金支払い
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 通知メッセージ設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>💬</span><span class="section-card-title">通知メッセージ設定</span></div>
+          <div class="section-card-body">
+            <div class="tr-desc" style="margin-bottom:16px">LINE通知で送信するメッセージテンプレートを設定します。</div>
+            <div class="form-group">
+              <label class="form-label">注文受付メッセージ：</label>
+              <textarea class="form-control" rows="3">ご注文ありがとうございます！\nお受取り番号：{{order_no}}\nお出来上がり次第ご連絡いたします。</textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">受け取り準備完了メッセージ：</label>
+              <textarea class="form-control" rows="3">ご注文の品が出来上がりました。\n店舗カウンターまでお越しください。{{order_no}} をお伝えください。</textarea>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /pane-takeout -->
+
+
+      <!-- ════════════════════════════════════════
+           TAB 6 — シフト設定  (A1_008)
+      ════════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-shift">
+
+        <!-- シフト登録機能 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>📅</span><span class="section-card-title">シフト登録機能</span></div>
+          <div class="section-card-body">
+            <label class="toggle" style="gap:10px">
+              <input type="checkbox" id="chk-shift" onchange="toggleSubBox(this,'shift-templates')">
+              <span class="toggle-track"></span>
+              <span class="toggle-label">シフト登録受付を有効にする</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- LINE メッセージテンプレート -->
+        <div class="section-card" id="shift-templates" style="opacity:.5;pointer-events:none">
+          <div class="section-card-header"><span>💬</span><span class="section-card-title">LINEメッセージテンプレート</span></div>
+          <div class="section-card-body" style="display:flex;flex-direction:column;gap:20px">
+
+            <div class="form-group" style="margin:0">
+              <label class="form-label">申請受付メッセージ</label>
+              <textarea class="form-control tmpl-textarea">【シフト申請受付】{{name}}さんのシフト申請を受け付けました。内容を確認後、承認いたします。</textarea>
+            </div>
+
+            <div class="form-group" style="margin:0">
+              <label class="form-label">承認メッセージ</label>
+              <textarea class="form-control tmpl-textarea">【シフト承認】{{name}}さんのシフト申請が承認されました。詳細はマイページにてご確認ください。</textarea>
+            </div>
+
+            <div class="form-group" style="margin:0">
+              <label class="form-label">却下メッセージ</label>
+              <textarea class="form-control tmpl-textarea">【シフト却下】{{name}}さん、申し訳ありませんが、希望時間の都合上をしていただき却下されました。</textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- リマインド設定 -->
+        <div class="section-card" id="shift-remind" style="opacity:.5;pointer-events:none">
+          <div class="section-card-header"><span>⏰</span><span class="section-card-title">リマインド設定</span></div>
+          <div class="section-card-body" style="display:flex;flex-direction:column;gap:16px">
+            <div>
+              <label class="form-label">送信タイミング</label>
+              <select class="form-control" style="max-width:240px">
+                <option selected>24時間前</option>
+                <option>48時間前</option>
+                <option>1週間前</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">リマインドメッセージ内容</label>
+              <textarea class="form-control tmpl-textarea">【シフトリマインド】{{name}}さん、明日のシフトが近づいています。出勤時間に遅れないようにしましょう！</textarea>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /pane-shift -->
+
+
+      <!-- ════════════════════════════════════════
+           TAB 7 — 店舗運用設定  (A1_009)
+      ════════════════════════════════════════ -->
+      <div class="tab-pane" id="pane-operation">
+
+        <!-- 店舗運用設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🏪</span><span class="section-card-title">店舗運用設定</span></div>
+          <div class="section-card-body">
+
+            <div class="toggle-row">
+              <div style="flex:1">
+                <div class="tr-label">アラート音</div>
+                <div class="tr-desc">新規注文や異常発生時にアラート音を鳴らします。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+            <div class="toggle-row">
+              <div style="flex:1">
+                <div class="tr-label">自動ログアウト</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+                  <span class="tr-desc">一定時間操作がない場合</span>
+                  <select class="form-control" style="width:120px">
+                    <option>5分</option>
+                    <option selected>15分</option>
+                    <option>30分</option>
+                    <option>60分</option>
+                  </select>
+                  <span class="tr-desc">自動ログアウト</span>
+                </div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+            <div class="toggle-row" style="border-bottom:none;padding-bottom:0">
+              <div>
+                <div class="tr-label">スタッフチャット</div>
+                <div class="tr-desc">ホールスタッフ間でのテキストチャット機能を有効にします。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 通知設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🔔</span><span class="section-card-title">通知設定</span></div>
+          <div class="section-card-body">
+
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">デスクトップ通知</div>
+                <div class="tr-desc">ブラウザのデスクトップ通知を有効にします。</div>
+              </div>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label>
+            </div>
+
+            <div class="toggle-row" style="border-bottom:none;padding-bottom:0">
+              <div>
+                <div class="tr-label">メール通知</div>
+                <div class="tr-desc">重要なイベント発生時にメール通知を送信します。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- モバイル設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>📱</span><span class="section-card-title">モバイル設定</span></div>
+          <div class="section-card-body">
+
+            <div class="toggle-row">
+              <div>
+                <div class="tr-label">タブレットモード</div>
+                <div class="tr-desc">タブレット向けに最適化されたUIを利用します。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+            <div class="toggle-row" style="border-bottom:none;padding-bottom:0">
+              <div>
+                <div class="tr-label">キオスクモード（セルフオーダー）</div>
+                <div class="tr-desc">お客様向けセルフオーダー専用として画面ロックをかけます。</div>
+              </div>
+              <label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- スタッフ呼び出し設定 -->
+        <div class="section-card">
+          <div class="section-card-header"><span>🔔</span><span class="section-card-title">スタッフ呼び出し設定</span></div>
+          <div class="section-card-body">
+            <p class="tr-desc" style="margin-bottom:16px">お客様がAIオーダーまたはテーブルタブレットからスタッフを呼ぶ際に表示される項目を設定します。</p>
+            <div class="table-wrap">
+              <table class="table" id="call-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px">#</th>
+                    <th style="width:56px">アイコン</th>
+                    <th>呼出内容</th>
+                    <th>説明</th>
+                    <th style="width:72px">表示順</th>
+                    <th style="width:96px">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>1</td>
+                    <td class="call-icon-cell">💧</td>
+                    <td><input type="text" class="form-control" value="水を追加" style="font-size:0.8rem"></td>
+                    <td><input type="text" class="form-control" value="お水を運ぶようリクエスト。" style="font-size:0.8rem"></td>
+                    <td><input type="number" class="form-control" value="1" style="width:56px;font-size:0.8rem"></td>
+                    <td style="display:flex;gap:4px;padding-top:8px">
+                      <button class="btn btn-sm btn-secondary" title="編集">✏️</button>
+                      <button class="btn btn-sm btn-danger" onclick="removeCallRow(this)" title="削除">🗑</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>2</td>
+                    <td class="call-icon-cell">🍽️</td>
+                    <td><input type="text" class="form-control" value="テーブルの清掃" style="font-size:0.8rem"></td>
+                    <td><input type="text" class="form-control" value="テーブルの片付けや残飯の処理。" style="font-size:0.8rem"></td>
+                    <td><input type="number" class="form-control" value="2" style="width:56px;font-size:0.8rem"></td>
+                    <td style="display:flex;gap:4px;padding-top:8px">
+                      <button class="btn btn-sm btn-secondary" title="編集">✏️</button>
+                      <button class="btn btn-sm btn-danger" onclick="removeCallRow(this)" title="削除">🗑</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>3</td>
+                    <td class="call-icon-cell">🧒</td>
+                    <td><input type="text" class="form-control" value="子供用食器" style="font-size:0.8rem"></td>
+                    <td><input type="text" class="form-control" value="お子様用の食器やカトラリーの依頼。" style="font-size:0.8rem"></td>
+                    <td><input type="number" class="form-control" value="3" style="width:56px;font-size:0.8rem"></td>
+                    <td style="display:flex;gap:4px;padding-top:8px">
+                      <button class="btn btn-sm btn-secondary" title="編集">✏️</button>
+                      <button class="btn btn-sm btn-danger" onclick="removeCallRow(this)" title="削除">🗑</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button class="btn btn-outline btn-sm" style="margin-top:12px" onclick="addCallRow()">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              新しい呼出項目を追加
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /pane-operation -->
+
+      <!-- Bottom nav -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:8px">
+        <a href="A1_002.html" class="btn btn-ghost">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+          前のステップ: 営業モード設定
+        </a>
+        <a href="A1_010.html" class="btn btn-primary">
+          次のステップ: 通知・LINE設定
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+
+    </div><!-- /page-content -->
+  </div><!-- /main-content -->
+</div><!-- /admin-wrapper -->
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  設定を保存しました
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'feature-detail' });
+
+  /* ── Tab switching ── */
+  const TAB_MAP = {
+    booking: 'booking', waitlist: 'waitlist', order: 'order',
+    payment: 'payment', takeout: 'takeout', shift: 'shift', operation: 'operation'
+  };
+
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + id));
+    location.hash = id;
+  }
+
+  /* ── Shift enable toggling ── */
+  document.getElementById('chk-shift').addEventListener('change', function() {
+    ['shift-templates','shift-remind'].forEach(id => {
+      const el = document.getElementById(id);
+      el.style.opacity = this.checked ? '1' : '.5';
+      el.style.pointerEvents = this.checked ? '' : 'none';
+    });
+  });
+
+  /* ── Generic sub-box toggle ── */
+  function toggleSubBox(checkbox, subId) {
+    const el = document.getElementById(subId);
+    if (!el) return;
+    el.style.display = checkbox.checked ? '' : 'none';
+  }
+
+  /* ── Booking slots ── */
+  function addBookingSlot() {
+    const tbody = document.querySelector('#booking-slots');
+    const n = tbody.rows.length + 1;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${n}</td>
+      <td><input type="time" class="form-control" value="11:00" style="width:110px"></td>
+      <td><input type="time" class="form-control" value="15:00" style="width:110px"></td>
+      <td><div class="day-check">${['月','火','水','木','金','土','日'].map(d=>`<label><input type="checkbox" style="accent-color:var(--color-primary)">${d}</label>`).join('')}</div></td>
+      <td><span class="badge badge-green">有効</span></td>
+      <td><button class="btn btn-sm btn-danger" onclick="removeSlotRow(this)">削除</button></td>`;
+    tbody.appendChild(tr);
+  }
+  function removeSlotRow(btn) { btn.closest('tr').remove(); }
+
+  /* ── Call button rows ── */
+  const ICONS = ['💧','🍽️','🧒','🔔','🧴','🍶','🍺','🧹'];
+  function addCallRow() {
+    const tbody = document.querySelector('#call-table tbody');
+    const n = tbody.rows.length + 1;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${n}</td>
+      <td class="call-icon-cell">${ICONS[n % ICONS.length]}</td>
+      <td><input type="text" class="form-control" placeholder="呼出内容" style="font-size:0.8rem"></td>
+      <td><input type="text" class="form-control" placeholder="説明" style="font-size:0.8rem"></td>
+      <td><input type="number" class="form-control" value="${n}" style="width:56px;font-size:0.8rem"></td>
+      <td style="display:flex;gap:4px;padding-top:8px">
+        <button class="btn btn-sm btn-secondary">✏️</button>
+        <button class="btn btn-sm btn-danger" onclick="removeCallRow(this)">🗑</button>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+  function removeCallRow(btn) { btn.closest('tr').remove(); }
+
+  /* ── Mode buttons (waitlist) ── */
+  function setMode(btn, _) {
+    btn.closest('.mode-group').querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  /* ── Save toast ── */
+  function handleSave() {
+    const t = document.getElementById('toast');
+    t.style.display = 'flex';
+    setTimeout(() => t.style.display = 'none', 2800);
+  }
+
+  /* ── Activate tab from hash ── */
+  const hash = location.hash.replace('#','');
+  switchTab(TAB_MAP[hash] || 'booking');
+</script>
+</body>
+</html>

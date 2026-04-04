@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>コース・セット管理 — AIOrder Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <style>
+    /* ── Tab bar ── */
+    .tab-bar { display:flex; gap:2px; border-bottom:2px solid var(--color-gray-200); margin-bottom:20px; overflow-x:auto; }
+    .tab-btn { display:flex; align-items:center; gap:6px; padding:10px 16px; font-size:0.82rem; font-weight:600; color:var(--color-gray-500); border:none; background:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:color var(--transition); }
+    .tab-btn:hover { color:var(--color-gray-800); }
+    .tab-btn.active { color:var(--color-primary); border-bottom-color:var(--color-primary); }
+    .tab-pane { display:none; }
+    .tab-pane.active { display:block; }
+
+    /* ── Filter bar ── */
+    .filter-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-bar .search-wrap { position:relative; flex:1; min-width:200px; }
+    .filter-bar .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--color-gray-400); }
+    .filter-bar .search-wrap input { padding-left:34px; }
+    .filter-bar select.form-control { min-width:130px; flex-shrink:0; }
+
+    /* ── Stats row ── */
+    .stats-row { display:flex; gap:0; border:1px solid var(--color-gray-200); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:16px; }
+    .stat-item { flex:1; padding:12px 16px; text-align:center; border-right:1px solid var(--color-gray-200); }
+    .stat-item:last-child { border-right:none; }
+    .stat-val { font-size:1.3rem; font-weight:800; color:var(--color-gray-900); line-height:1; }
+    .stat-lbl { font-size:0.7rem; color:var(--color-gray-500); margin-top:3px; }
+
+    /* ── Menu table ── */
+    .menu-table { width:100%; border-collapse:collapse; font-size:0.82rem; }
+    .menu-table th { padding:10px 12px; text-align:left; font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--color-gray-500); border-bottom:2px solid var(--color-gray-200); background:var(--color-gray-50); white-space:nowrap; }
+    .menu-table td { padding:12px; border-bottom:1px solid var(--color-gray-100); vertical-align:middle; color:var(--color-gray-700); }
+    .menu-table tbody tr:hover { background:var(--color-gray-50); }
+    .menu-table tbody tr:last-child td { border-bottom:none; }
+
+    /* ── Thumb placeholder ── */
+    .img-thumb { width:64px; height:48px; border-radius:var(--radius-md); background:var(--color-gray-200); display:flex; align-items:center; justify-content:center; font-size:0.65rem; color:var(--color-gray-400); font-weight:600; flex-shrink:0; overflow:hidden; }
+    .img-thumb img { width:100%; height:100%; object-fit:cover; }
+
+    /* ── Menu name cell ── */
+    .menu-name { font-weight:700; color:var(--color-gray-900); margin-bottom:2px; }
+    .menu-code { font-size:0.7rem; color:var(--color-gray-400); font-family:monospace; }
+
+    /* ── Price ── */
+    .price-val { font-weight:700; color:var(--color-gray-900); }
+    .price-cost { font-size:0.7rem; color:var(--color-gray-400); }
+
+    /* ── Bulk bar ── */
+    .bulk-bar { display:none; align-items:center; gap:10px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:var(--radius-md); padding:9px 14px; margin-bottom:12px; font-size:0.82rem; }
+    .bulk-bar.active { display:flex; }
+
+    /* ── Pagination ── */
+    .pagination { display:flex; align-items:center; justify-content:space-between; padding-top:16px; flex-wrap:wrap; gap:10px; }
+    .page-info { font-size:0.8rem; color:var(--color-gray-500); }
+    .page-btns { display:flex; gap:4px; }
+    .page-btn  { width:32px; height:32px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:600; border:1px solid var(--color-gray-200); background:var(--color-white); cursor:pointer; color:var(--color-gray-600); transition:background var(--transition); }
+    .page-btn:hover  { background:var(--color-gray-100); }
+    .page-btn.active { background:var(--color-primary); color:#fff; border-color:var(--color-primary); }
+    .page-btn:disabled { opacity:.4; cursor:default; }
+
+    /* ── Delete confirm overlay ── */
+    .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:200; align-items:center; justify-content:center; }
+    .confirm-overlay.active { display:flex; }
+    .confirm-box { background:#fff; border-radius:var(--radius-xl); padding:28px 32px; max-width:380px; width:90%; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.18); }
+    .confirm-box h3 { font-size:1rem; font-weight:700; margin-bottom:8px; }
+    .confirm-box p  { font-size:0.83rem; color:var(--color-gray-500); margin-bottom:20px; }
+    .confirm-box .actions { display:flex; gap:10px; justify-content:center; }
+
+    /* ── Page header row ── */
+    .page-header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+
+    /* ── Course tab placeholder ── */
+    .empty-tab { text-align:center; padding:60px 20px; color:var(--color-gray-400); }
+    .empty-tab svg { margin-bottom:12px; opacity:.4; }
+    .empty-tab p { font-size:0.85rem; }
+
+    /* ── Course row ── */
+    .course-row { cursor:pointer; transition:background var(--transition); }
+    .course-row:hover { background:var(--color-gray-50); }
+    .course-row.active-row { background:#eff6ff !important; }
+
+    @media (max-width:900px) {
+      #pane-course > div:last-child { grid-template-columns:1fr !important; }
+      #course-detail-panel { position:static !important; }
+    }
+  </style>
+</head>
+<body>
+<div class="admin-wrapper">
+  <div id="sidebar-placeholder"></div>
+
+  <div class="main-content">
+    <div id="header-placeholder"></div>
+
+    <div class="page-content">
+
+      <!-- Page header -->
+      <div class="page-header-row">
+        <div>
+          <nav class="breadcrumb">
+            <a href="index.html">ホーム</a>
+            <span class="breadcrumb-sep">›</span>
+            <span>マスタ管理</span>
+            <span class="breadcrumb-sep">›</span>
+            <span>メニュー管理</span>
+          </nav>
+          <h1 class="page-title" style="margin-top:8px">🍜 メニュー管理</h1>
+          <p class="page-subtitle">単品・食べ放題・コース・トッピングなどを総合管理します。</p>
+        </div>
+        <a href="A1_017.html" class="btn btn-danger" style="flex-shrink:0;margin-top:6px">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新規登録
+        </a>
+      </div>
+
+      <!-- ── Tab bar ── -->
+      <div class="tab-bar">
+        <button class="tab-btn"        data-tab="menu-list"  onclick="switchTab('menu-list')">🍽️ メニュー一覧</button>
+        <button class="tab-btn active" data-tab="course"     onclick="switchTab('course')">   📦 コース・セット</button>
+        <button class="tab-btn"        data-tab="topping"    onclick="switchTab('topping')">  🧂 トッピング設定</button>
+        <button class="tab-btn"        data-tab="category"   onclick="switchTab('category')"> 🗂 カテゴリー管理</button>
+        <button class="tab-btn"        data-tab="variation"  onclick="switchTab('variation')">🔀 バリエーション設定</button>
+      </div>
+
+      <!-- ════════════════════
+           TAB: メニュー一覧
+      ════════════════════ -->
+      <div class="tab-pane" id="pane-menu-list">
+
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-item">
+            <div class="stat-val">87</div>
+            <div class="stat-lbl">総メニュー数</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" style="color:var(--color-success)">73</div>
+            <div class="stat-lbl">販売中</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" style="color:var(--color-warning)">9</div>
+            <div class="stat-lbl">一時停止</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" style="color:var(--color-danger)">5</div>
+            <div class="stat-lbl">在庫切れ</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-val" style="color:var(--color-primary)">18</div>
+            <div class="stat-lbl">おすすめ設定済み</div>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <div class="search-wrap">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" class="form-control" id="search-input" placeholder="メニュー名・キーワード検索" oninput="filterTable()">
+          </div>
+          <select class="form-control" id="filter-category" onchange="filterTable()">
+            <option value="">全てのカテゴリ</option>
+            <option>フード</option>
+            <option>ドリンク</option>
+            <option>デザート</option>
+            <option>食べ放題</option>
+            <option>テイクアウト専用</option>
+          </select>
+          <select class="form-control" id="filter-status" onchange="filterTable()">
+            <option value="">販売ステータス</option>
+            <option>販売中</option>
+            <option>一時停止</option>
+            <option>在庫切れ</option>
+          </select>
+          <select class="form-control" id="filter-recommend" onchange="filterTable()">
+            <option value="">おすすめ表示</option>
+            <option>おすすめあり</option>
+            <option>おすすめなし</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="filterTable()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            検索
+          </button>
+          <button class="btn btn-sm btn-secondary" onclick="resetFilter()">リセット</button>
+        </div>
+
+        <!-- Bulk action bar -->
+        <div class="bulk-bar" id="bulk-bar">
+          <input type="checkbox" id="bulk-check-all" onchange="selectAll(this)">
+          <span id="bulk-count" style="font-weight:700;color:var(--color-primary)">0件</span> 選択中
+          <button class="btn btn-sm btn-secondary" onclick="bulkStatus('販売中')">販売中に変更</button>
+          <button class="btn btn-sm btn-secondary" onclick="bulkStatus('一時停止')">一時停止に変更</button>
+          <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626" onclick="bulkDelete()">まとめて削除</button>
+          <button class="btn btn-sm btn-ghost" onclick="clearSelection()" style="margin-left:auto">選択解除</button>
+        </div>
+
+        <!-- Table -->
+        <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+          <table class="menu-table" id="menu-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="check-all" onchange="selectAll(this)"></th>
+                <th style="width:80px">画像</th>
+                <th>メニュー名</th>
+                <th style="width:100px">カテゴリ</th>
+                <th style="width:110px">価格（税込）</th>
+                <th style="width:100px">販売ステータス</th>
+                <th style="width:90px">おすすめ</th>
+                <th style="width:100px">更新日</th>
+                <th style="width:90px">操作</th>
+              </tr>
+            </thead>
+            <tbody id="menu-tbody">
+
+              <tr data-category="フード" data-status="販売中" data-recommend="おすすめあり">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">マルゲリータピザ</div>
+                  <div class="menu-code">F-012</div>
+                </td>
+                <td><span class="badge badge-gray">フード</span></td>
+                <td>
+                  <div class="price-val">¥1,200</div>
+                  <div class="price-cost">原価 ¥420</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td><span class="badge badge-blue">人気</span></td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/20</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('マルゲリータピザ')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="食べ放題" data-status="販売中" data-recommend="おすすめなし">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">食べ放題ドリンクバー</div>
+                  <div class="menu-code">B-001</div>
+                </td>
+                <td><span class="badge badge-purple">食べ放題</span></td>
+                <td>
+                  <div class="price-val">¥980</div>
+                  <div class="price-cost">原価 ¥210</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td style="color:var(--color-gray-300);text-align:center">—</td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/22</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('食べ放題ドリンクバー')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="フード" data-status="販売中" data-recommend="おすすめなし">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">カルボナーラパスタ</div>
+                  <div class="menu-code">F-008</div>
+                </td>
+                <td><span class="badge badge-gray">フード</span></td>
+                <td>
+                  <div class="price-val">¥1,100</div>
+                  <div class="price-cost">原価 ¥380</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td style="color:var(--color-gray-300);text-align:center">—</td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/18</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('カルボナーラパスタ')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="デザート" data-status="販売中" data-recommend="おすすめあり">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">ティラミス</div>
+                  <div class="menu-code">D-003</div>
+                </td>
+                <td><span class="badge badge-yellow">デザート</span></td>
+                <td>
+                  <div class="price-val">¥650</div>
+                  <div class="price-cost">原価 ¥180</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td><span class="badge badge-blue">人気</span></td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/19</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('ティラミス')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="フード" data-status="販売中" data-recommend="おすすめなし">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">シーザーサラダ</div>
+                  <div class="menu-code">F-015</div>
+                </td>
+                <td><span class="badge badge-gray">フード</span></td>
+                <td>
+                  <div class="price-val">¥780</div>
+                  <div class="price-cost">原価 ¥230</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td style="color:var(--color-gray-300);text-align:center">—</td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/17</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('シーザーサラダ')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="フード" data-status="販売中" data-recommend="おすすめあり">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">とんこつラーメン</div>
+                  <div class="menu-code">F-001</div>
+                </td>
+                <td><span class="badge badge-gray">フード</span></td>
+                <td>
+                  <div class="price-val">¥980</div>
+                  <div class="price-cost">原価 ¥350</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td><span class="badge badge-green">おすすめ</span></td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/15</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('とんこつラーメン')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="フード" data-status="販売中" data-recommend="おすすめあり">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">焼き鳥セット</div>
+                  <div class="menu-code">F-005</div>
+                </td>
+                <td><span class="badge badge-gray">フード</span></td>
+                <td>
+                  <div class="price-val">¥1,500</div>
+                  <div class="price-cost">原価 ¥550</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td><span class="badge badge-green">おすすめ</span></td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/10</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('焼き鳥セット')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="ドリンク" data-status="販売中" data-recommend="おすすめあり">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">生ビール</div>
+                  <div class="menu-code">DR-001</div>
+                </td>
+                <td><span class="badge" style="background:#dbeafe;color:#1e40af">ドリンク</span></td>
+                <td>
+                  <div class="price-val">¥600</div>
+                  <div class="price-cost">原価 ¥150</div>
+                </td>
+                <td><span class="badge badge-green">販売中</span></td>
+                <td><span class="badge badge-blue">人気</span></td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/10/08</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('生ビール')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="フード" data-status="一時停止" data-recommend="おすすめなし">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">季節の鍋セット</div>
+                  <div class="menu-code">F-022</div>
+                </td>
+                <td><span class="badge badge-gray">フード</span></td>
+                <td>
+                  <div class="price-val">¥2,200</div>
+                  <div class="price-cost">原価 ¥780</div>
+                </td>
+                <td><span class="badge badge-yellow">一時停止</span></td>
+                <td style="color:var(--color-gray-300);text-align:center">—</td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/09/30</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('季節の鍋セット')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr data-category="デザート" data-status="在庫切れ" data-recommend="おすすめなし">
+                <td><input type="checkbox" class="row-check" onchange="updateBulkBar()"></td>
+                <td><div class="img-thumb"><span>80×60</span></div></td>
+                <td>
+                  <div class="menu-name">宇治抹茶パフェ</div>
+                  <div class="menu-code">D-007</div>
+                </td>
+                <td><span class="badge badge-yellow">デザート</span></td>
+                <td>
+                  <div class="price-val">¥890</div>
+                  <div class="price-cost">原価 ¥310</div>
+                </td>
+                <td><span class="badge badge-red">在庫切れ</span></td>
+                <td style="color:var(--color-gray-300);text-align:center">—</td>
+                <td style="color:var(--color-gray-400);font-size:0.78rem">2025/09/25</td>
+                <td>
+                  <div style="display:flex;gap:4px">
+                    <a href="A1_017.html" class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</a>
+                    <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('宇治抹茶パフェ')">削除</button>
+                  </div>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+          <div class="page-info" id="page-info">10件 / 全87件</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div class="page-btns">
+              <button class="page-btn" disabled>‹</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <span style="font-size:0.8rem;color:var(--color-gray-400);padding:0 4px">…</span>
+              <button class="page-btn">9</button>
+              <button class="page-btn">›</button>
+            </div>
+            <select class="form-control" style="width:auto;font-size:0.78rem">
+              <option>10件/ページ</option>
+              <option>20件/ページ</option>
+              <option>50件/ページ</option>
+            </select>
+          </div>
+        </div>
+
+      </div><!-- /pane-menu-list -->
+
+
+      <!-- ════════════════════
+           TAB: コース・セット
+      ════════════════════ -->
+      <div class="tab-pane active" id="pane-course">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:0.83rem;color:var(--color-gray-600)">コースメニュー・セットメニューを管理します。</div>
+          <button class="btn btn-danger btn-sm" onclick="openCourseModal()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            コース新規登録
+          </button>
+        </div>
+
+        <!-- Stats row -->
+        <div class="stats-row" style="margin-bottom:16px">
+          <div class="stat-item"><div class="stat-val">4</div><div class="stat-lbl">コース総数</div></div>
+          <div class="stat-item"><div class="stat-val" style="color:var(--color-success)">3</div><div class="stat-lbl">予約ページ表示中</div></div>
+          <div class="stat-item"><div class="stat-val" style="color:var(--color-primary)">2</div><div class="stat-lbl">食べ/飲み放題</div></div>
+          <div class="stat-item"><div class="stat-val" style="color:var(--color-warning)">1</div><div class="stat-lbl">非表示</div></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start">
+
+          <!-- Course list table -->
+          <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+            <table class="menu-table" id="course-table">
+              <thead>
+                <tr>
+                  <th>コース名</th>
+                  <th style="width:100px">タイプ</th>
+                  <th style="width:90px">価格</th>
+                  <th style="width:80px">制限時間</th>
+                  <th style="width:80px">予約表示</th>
+                  <th style="width:90px">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="course-row active-row" style="background:#eff6ff" onclick="selectCourse(this,'C-001')" data-id="C-001">
+                  <td>
+                    <div class="menu-name" style="display:flex;align-items:center;gap:6px">
+                      <span style="width:8px;height:8px;border-radius:50%;background:var(--color-primary);display:inline-block"></span>
+                      プレミアムディナーコース
+                    </div>
+                    <div class="menu-code">C-001</div>
+                  </td>
+                  <td><span class="badge badge-purple">通常</span></td>
+                  <td><span class="price-val">¥5,500</span></td>
+                  <td>90分</td>
+                  <td><span class="badge badge-green">表示中</span></td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="selectCourse(this.closest('tr'),'C-001');event.stopPropagation()">編集</button>
+                      <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('プレミアムディナーコース');event.stopPropagation()">削除</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="course-row" onclick="selectCourse(this,'C-002')" data-id="C-002">
+                  <td>
+                    <div class="menu-name">飲み放題コース</div>
+                    <div class="menu-code">C-002</div>
+                  </td>
+                  <td><span class="badge badge-blue">飲み放題</span></td>
+                  <td><span class="price-val">¥1,800</span></td>
+                  <td>60分</td>
+                  <td><span class="badge badge-green">表示中</span></td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="selectCourse(this.closest('tr'),'C-002');event.stopPropagation()">編集</button>
+                      <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('飲み放題コース');event.stopPropagation()">削除</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="course-row" onclick="selectCourse(this,'C-003')" data-id="C-003">
+                  <td>
+                    <div class="menu-name">90分食べ放題</div>
+                    <div class="menu-code">C-003</div>
+                  </td>
+                  <td><span class="badge badge-green">食べ放題</span></td>
+                  <td><span class="price-val">¥3,980</span></td>
+                  <td>90分</td>
+                  <td><span class="badge badge-green">表示中</span></td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="selectCourse(this.closest('tr'),'C-003');event.stopPropagation()">編集</button>
+                      <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('90分食べ放題');event.stopPropagation()">削除</button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="course-row" onclick="selectCourse(this,'C-004')" data-id="C-004">
+                  <td>
+                    <div class="menu-name">ランチセットA</div>
+                    <div class="menu-code">C-004</div>
+                  </td>
+                  <td><span class="badge badge-purple">通常</span></td>
+                  <td><span class="price-val">¥1,200</span></td>
+                  <td>制限なし</td>
+                  <td><span class="badge badge-gray">非表示</span></td>
+                  <td>
+                    <div style="display:flex;gap:4px">
+                      <button class="btn btn-sm btn-secondary" style="padding:5px 9px" onclick="selectCourse(this.closest('tr'),'C-004');event.stopPropagation()">編集</button>
+                      <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px" onclick="confirmDelete('ランチセットA');event.stopPropagation()">削除</button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Detail panel -->
+          <div id="course-detail-panel" style="border:1px solid var(--color-primary);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-md);position:sticky;top:80px">
+            <div style="background:var(--color-primary);padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:0.83rem;font-weight:700;color:#fff">📦 コース詳細設定</span>
+              <span style="font-size:0.72rem;color:#bfdbfe;font-family:monospace" id="detail-code">C-001</span>
+            </div>
+            <div style="padding:16px 18px;background:#fff">
+
+              <!-- Course name -->
+              <div class="form-group" style="margin-bottom:14px">
+                <label class="form-label" style="font-size:0.73rem">コース名</label>
+                <input type="text" class="form-control" id="detail-name" value="プレミアムディナーコース">
+              </div>
+
+              <!-- Type + Price -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                <div class="form-group" style="margin:0">
+                  <label class="form-label" style="font-size:0.73rem">タイプ</label>
+                  <select class="form-control" id="detail-type">
+                    <option selected>通常</option>
+                    <option>飲み放題</option>
+                    <option>食べ放題</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label" style="font-size:0.73rem">価格（税込）</label>
+                  <div style="position:relative">
+                    <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:0.82rem;color:var(--color-gray-500)">¥</span>
+                    <input type="number" class="form-control" id="detail-price" value="5500" style="padding-left:22px">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Time + Max group -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                <div class="form-group" style="margin:0">
+                  <label class="form-label" style="font-size:0.73rem">制限時間</label>
+                  <select class="form-control" id="detail-time">
+                    <option>30分</option>
+                    <option>60分</option>
+                    <option selected>90分</option>
+                    <option>120分</option>
+                    <option>制限なし</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0">
+                  <label class="form-label" style="font-size:0.73rem">最大グループ数</label>
+                  <input type="number" class="form-control" id="detail-max-group" value="10" min="1">
+                </div>
+              </div>
+
+              <!-- Booking display toggle -->
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--color-gray-50);border-radius:var(--radius-md);margin-bottom:14px">
+                <div>
+                  <div style="font-size:0.8rem;font-weight:600;color:var(--color-gray-800)">予約ページへの表示</div>
+                  <div style="font-size:0.72rem;color:var(--color-gray-500)">ONにすると予約フォームに表示されます</div>
+                </div>
+                <label class="toggle">
+                  <input type="checkbox" id="detail-booking" checked>
+                  <span class="toggle-track"></span>
+                </label>
+              </div>
+
+              <!-- Applicable menus -->
+              <div class="form-group" style="margin-bottom:14px">
+                <label class="form-label" style="font-size:0.73rem">適用メニュー</label>
+                <div style="font-size:0.72rem;color:var(--color-gray-500);margin-bottom:6px">このコースに含まれるメニューを選択します</div>
+                <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-md);overflow:hidden;max-height:140px;overflow-y:auto">
+                  <table style="width:100%;border-collapse:collapse;font-size:0.78rem">
+                    <thead>
+                      <tr style="background:var(--color-gray-50)">
+                        <th style="padding:6px 10px;text-align:left;font-weight:600;color:var(--color-gray-500);font-size:0.7rem;border-bottom:1px solid var(--color-gray-200)">メニュー名</th>
+                        <th style="padding:6px 10px;text-align:center;font-weight:600;color:var(--color-gray-500);font-size:0.7rem;border-bottom:1px solid var(--color-gray-200);width:50px">含む</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style="border-bottom:1px solid var(--color-gray-100)">
+                        <td style="padding:6px 10px;color:var(--color-gray-700)">とんこつラーメン</td>
+                        <td style="text-align:center"><input type="checkbox" checked accent-color="var(--color-primary)"></td>
+                      </tr>
+                      <tr style="border-bottom:1px solid var(--color-gray-100)">
+                        <td style="padding:6px 10px;color:var(--color-gray-700)">マルゲリータピザ</td>
+                        <td style="text-align:center"><input type="checkbox" checked></td>
+                      </tr>
+                      <tr style="border-bottom:1px solid var(--color-gray-100)">
+                        <td style="padding:6px 10px;color:var(--color-gray-700)">焼き鳥セット</td>
+                        <td style="text-align:center"><input type="checkbox" checked></td>
+                      </tr>
+                      <tr style="border-bottom:1px solid var(--color-gray-100)">
+                        <td style="padding:6px 10px;color:var(--color-gray-700)">カルボナーラパスタ</td>
+                        <td style="text-align:center"><input type="checkbox"></td>
+                      </tr>
+                      <tr style="border-bottom:1px solid var(--color-gray-100)">
+                        <td style="padding:6px 10px;color:var(--color-gray-700)">ティラミス</td>
+                        <td style="text-align:center"><input type="checkbox" checked></td>
+                      </tr>
+                      <tr>
+                        <td style="padding:6px 10px;color:var(--color-gray-700)">生ビール</td>
+                        <td style="text-align:center"><input type="checkbox"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div class="form-group" style="margin-bottom:16px">
+                <label class="form-label" style="font-size:0.73rem">コース説明文</label>
+                <textarea class="form-control" rows="2" style="font-size:0.8rem">前菜・メイン・デザートを含む全8品の贅沢なディナーコースです。</textarea>
+              </div>
+
+              <!-- Save button -->
+              <button class="btn btn-primary" style="width:100%" onclick="showToast('コース設定を保存しました')">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                変更を保存
+              </button>
+            </div>
+          </div>
+
+        </div><!-- /grid -->
+      </div>
+
+      <!-- ════════════════════
+           TAB: トッピング設定
+      ════════════════════ -->
+      <div class="tab-pane" id="pane-topping">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:0.83rem;color:var(--color-gray-600)">トッピング・オプショングループを管理します。</div>
+          <button class="btn btn-danger btn-sm" onclick="showToast('トッピング新規登録')">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            トッピング新規追加
+          </button>
+        </div>
+        <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+          <table class="menu-table">
+            <thead>
+              <tr>
+                <th>グループ名</th>
+                <th style="width:100px">選択タイプ</th>
+                <th>オプション</th>
+                <th style="width:80px">必須</th>
+                <th style="width:90px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div class="menu-name">サイズ</div></td>
+                <td><span class="badge badge-blue">単一選択</span></td>
+                <td style="font-size:0.78rem;color:var(--color-gray-600)">大 +¥100 / 中 ±0（デフォルト）/ 小 -¥50</td>
+                <td><span class="badge badge-green">必須</span></td>
+                <td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="menu-name">麺の固さ</div></td>
+                <td><span class="badge badge-blue">単一選択</span></td>
+                <td style="font-size:0.78rem;color:var(--color-gray-600)">固め / 普通（デフォルト）/ 柔らかめ</td>
+                <td><span class="badge badge-gray">任意</span></td>
+                <td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td>
+              </tr>
+              <tr>
+                <td><div class="menu-name">追加トッピング</div></td>
+                <td><span class="badge badge-purple">複数選択</span></td>
+                <td style="font-size:0.78rem;color:var(--color-gray-600)">チャーシュー +¥150 / 煮卵 +¥100 / 海苔 +¥80 / ネギ +¥50</td>
+                <td><span class="badge badge-gray">任意</span></td>
+                <td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ════════════════════
+           TAB: カテゴリー管理
+      ════════════════════ -->
+      <div class="tab-pane" id="pane-category">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:0.83rem;color:var(--color-gray-600)">メニューカテゴリの追加・編集・並び順を管理します。</div>
+          <button class="btn btn-danger btn-sm" onclick="showToast('カテゴリ新規追加')">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            カテゴリ追加
+          </button>
+        </div>
+        <div style="border:1px solid var(--color-gray-200);border-radius:var(--radius-xl);overflow:hidden;box-shadow:var(--shadow-sm)">
+          <table class="menu-table">
+            <thead>
+              <tr>
+                <th style="width:40px">順</th>
+                <th>カテゴリ名</th>
+                <th style="width:80px">件数</th>
+                <th style="width:80px">表示</th>
+                <th style="width:90px">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td style="color:var(--color-gray-400)">⠿</td><td><div class="menu-name">🌟 おすすめメニュー</div></td><td>12件</td><td><span class="badge badge-green">表示</span></td><td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td></tr>
+              <tr><td style="color:var(--color-gray-400)">⠿</td><td><div class="menu-name">🍽️ 定番メニュー</div></td><td>42件</td><td><span class="badge badge-green">表示</span></td><td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td></tr>
+              <tr><td style="color:var(--color-gray-400)">⠿</td><td><div class="menu-name">🎌 期間限定メニュー</div></td><td>8件</td><td><span class="badge badge-green">表示</span></td><td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td></tr>
+              <tr><td style="color:var(--color-gray-400)">⠿</td><td><div class="menu-name">🍹 ドリンク</div></td><td>23件</td><td><span class="badge badge-green">表示</span></td><td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td></tr>
+              <tr><td style="color:var(--color-gray-400)">⠿</td><td><div class="menu-name">🍮 デザート</div></td><td>10件</td><td><span class="badge badge-green">表示</span></td><td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td></tr>
+              <tr><td style="color:var(--color-gray-400)">⠿</td><td><div class="menu-name">🥡 Takeout専用</div><div class="menu-code">AIから除外済み</div></td><td>5件</td><td><span class="badge badge-gray">非表示</span></td><td><div style="display:flex;gap:4px"><button class="btn btn-sm btn-secondary" style="padding:5px 9px">編集</button><button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;padding:5px 9px">削除</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ════════════════════
+           TAB: バリエーション設定
+      ════════════════════ -->
+      <div class="tab-pane" id="pane-variation">
+        <div class="empty-tab">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <p>バリエーション設定（同一メニューのサイズ違い・色違いなど）はこちらで管理します。</p>
+          <button class="btn btn-primary" style="margin-top:12px" onclick="showToast('バリエーション新規追加')">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            バリエーションを追加
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /page-content -->
+  </div>
+</div>
+
+<!-- Delete confirm overlay -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div style="width:48px;height:48px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <svg width="22" height="22" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+    <h3>メニューを削除しますか？</h3>
+    <p id="confirm-name" style="font-weight:700;color:var(--color-gray-800);margin-bottom:6px"></p>
+    <p>この操作は取り消せません。本当に削除しますか？</p>
+    <div class="actions">
+      <button class="btn btn-secondary" onclick="closeConfirm()">キャンセル</button>
+      <button class="btn" style="background:#dc2626;color:#fff" onclick="executeDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;bottom:24px;right:24px;z-index:999;background:#10b981;color:#fff;padding:12px 20px;border-radius:10px;font-size:0.85rem;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;align-items:center;gap:8px">
+  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toast-msg">完了しました</span>
+</div>
+
+<script src="_layout.js"></script>
+<script>
+  initLayout({ activeId: 'menu' });
+
+  /* ── Tab switch ── */
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + id));
+  }
+
+  /* ── Filter ── */
+  function filterTable() {
+    const q    = document.getElementById('search-input').value.toLowerCase();
+    const cat  = document.getElementById('filter-category').value;
+    const st   = document.getElementById('filter-status').value;
+    const rec  = document.getElementById('filter-recommend').value;
+    let visible = 0;
+    document.querySelectorAll('#menu-tbody tr').forEach(tr => {
+      const name   = tr.querySelector('.menu-name')?.textContent.toLowerCase() || '';
+      const trCat  = tr.dataset.category || '';
+      const trSt   = tr.dataset.status   || '';
+      const trRec  = tr.dataset.recommend || '';
+      const show   = (!q   || name.includes(q))
+                  && (!cat || trCat === cat)
+                  && (!st  || trSt  === st)
+                  && (!rec || trRec === rec);
+      tr.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+    document.getElementById('page-info').textContent = visible + '件 / 全87件';
+  }
+
+  function resetFilter() {
+    document.getElementById('search-input').value = '';
+    document.getElementById('filter-category').value = '';
+    document.getElementById('filter-status').value = '';
+    document.getElementById('filter-recommend').value = '';
+    filterTable();
+  }
+
+  /* ── Bulk select ── */
+  function selectAll(master) {
+    document.querySelectorAll('.row-check').forEach(c => {
+      if (!c.closest('tr').style.display || c.closest('tr').style.display !== 'none') {
+        c.checked = master.checked;
+      }
+    });
+    // sync both checkboxes
+    document.getElementById('check-all').checked = master.checked;
+    document.getElementById('bulk-check-all').checked = master.checked;
+    updateBulkBar();
+  }
+
+  function updateBulkBar() {
+    const checked = document.querySelectorAll('.row-check:checked').length;
+    const bar = document.getElementById('bulk-bar');
+    bar.classList.toggle('active', checked > 0);
+    document.getElementById('bulk-count').textContent = checked + '件';
+  }
+
+  function clearSelection() {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = false);
+    document.getElementById('check-all').checked = false;
+    document.getElementById('bulk-check-all').checked = false;
+    updateBulkBar();
+  }
+
+  function bulkStatus(status) {
+    const count = document.querySelectorAll('.row-check:checked').length;
+    clearSelection();
+    showToast(count + '件のステータスを「' + status + '」に変更しました');
+  }
+
+  function bulkDelete() {
+    const count = document.querySelectorAll('.row-check:checked').length;
+    if (!confirm(count + '件のメニューを削除しますか？この操作は取り消せません。')) return;
+    document.querySelectorAll('.row-check:checked').forEach(c => c.closest('tr').remove());
+    clearSelection();
+    showToast(count + '件を削除しました');
+  }
+
+  /* ── Delete confirm ── */
+  let _deleteTarget = null;
+  function confirmDelete(name) {
+    _deleteTarget = name;
+    document.getElementById('confirm-name').textContent = '「' + name + '」';
+    document.getElementById('confirm-overlay').classList.add('active');
+  }
+  function closeConfirm() {
+    document.getElementById('confirm-overlay').classList.remove('active');
+    _deleteTarget = null;
+  }
+  function executeDelete() {
+    closeConfirm();
+    showToast('「' + _deleteTarget + '」を削除しました');
+  }
+  document.getElementById('confirm-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeConfirm();
+  });
+
+  /* ── Toast ── */
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg || '完了しました';
+    toast.style.display = 'flex';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => { toast.style.display = 'none'; }, 2800);
+  }
+
+  /* ── Course row select ── */
+  const COURSE_DATA = {
+    'C-001': { name:'プレミアムディナーコース', type:'通常',    price:5500, time:'90分',   maxGroup:10, booking:true  },
+    'C-002': { name:'飲み放題コース',           type:'飲み放題', price:1800, time:'60分',   maxGroup:20, booking:true  },
+    'C-003': { name:'90分食べ放題',             type:'食べ放題', price:3980, time:'90分',   maxGroup:15, booking:true  },
+    'C-004': { name:'ランチセットA',            type:'通常',    price:1200, time:'制限なし', maxGroup:8,  booking:false },
+  };
+  function selectCourse(row, id) {
+    document.querySelectorAll('.course-row').forEach(r => r.classList.remove('active-row'));
+    row.classList.add('active-row');
+    const d = COURSE_DATA[id];
+    if (!d) return;
+    document.getElementById('detail-code').textContent  = id;
+    document.getElementById('detail-name').value        = d.name;
+    document.getElementById('detail-type').value        = d.type;
+    document.getElementById('detail-price').value       = d.price;
+    document.getElementById('detail-time').value        = d.time;
+    document.getElementById('detail-max-group').value   = d.maxGroup;
+    document.getElementById('detail-booking').checked   = d.booking;
+  }
+
+  /* ── Open new course modal (stub) ── */
+  function openCourseModal() {
+    showToast('新規コース登録フォームを開きます');
+  }
+</script>
+</body>
+</html>
